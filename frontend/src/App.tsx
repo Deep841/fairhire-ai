@@ -32,22 +32,10 @@ function AppRoutes() {
       <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/process-resumes" element={<RequireAuth><ProcessResumes /></RequireAuth>} />
       <Route path="/pipeline" element={<RequireAuth><Pipeline /></RequireAuth>} />
-      <Route
-        path="/candidates"
-        element={<RequireAuth><Layout><Candidates /></Layout></RequireAuth>}
-      />
-      <Route
-        path="/candidates/:candidateId"
-        element={<RequireAuth><CandidateProfile /></RequireAuth>}
-      />
-      <Route
-        path="/jobs"
-        element={<RequireAuth><Layout><Jobs /></Layout></RequireAuth>}
-      />
-      <Route
-        path="/interviews"
-        element={<RequireAuth><Layout><Interviews /></Layout></RequireAuth>}
-      />
+      <Route path="/candidates" element={<RequireAuth><Layout><Candidates /></Layout></RequireAuth>} />
+      <Route path="/candidates/:candidateId" element={<RequireAuth><CandidateProfile /></RequireAuth>} />
+      <Route path="/jobs" element={<RequireAuth><Layout><Jobs /></Layout></RequireAuth>} />
+      <Route path="/interviews" element={<RequireAuth><Interviews /></RequireAuth>} />
       </Routes>
       {isAuthenticated && <RecruiterChat />}
     </>
