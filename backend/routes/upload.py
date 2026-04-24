@@ -91,7 +91,7 @@ async def upload_resume(file: UploadFile) -> UploadResponse:
     links: list[LinkResult] = []
 
     if parsed.full_text:
-        profile = extract_profile(parsed.full_text)
+        profile = extract_profile(parsed.full_text, parsed.raw_text_for_contacts)
         links   = await verify_links(parsed.full_text)
 
     return UploadResponse(

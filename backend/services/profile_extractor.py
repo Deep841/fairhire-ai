@@ -229,15 +229,20 @@ _DATE_RANGE = re.compile(
 # Public API
 # ---------------------------------------------------------------------------
 
-def extract_profile(text: str) -> CandidateProfile:
+def extract_profile(text: str, raw_text: str = "") -> CandidateProfile:
+    """
+    text     — cleaned text, used for skills/education/certs/experience
+    raw_text — uncleaned text, used for email/phone/name (avoids cleanup corruption)
+    """
+    contact_src = raw_text if raw_text.strip() else text
     return CandidateProfile(
         skills=_extract_skills(text),
         education=_extract_education(text),
         certifications=_extract_certifications(text),
         experience_years=_extract_experience_years(text),
-        full_name=_extract_name(text),
-        email=_extract_email(text),
-        phone=_extract_phone(text),
+        full_name=_extract_name(contact_src),
+        email=_extract_email(contact_src),
+        phone=_extract_phone(contact_src),
         raw_text=text,
     )
 

@@ -35,6 +35,7 @@ class ParsedResume:
     size_bytes: int
     detected_type: str
     full_text: str
+    raw_text_for_contacts: str   # uncleaned — used for email/phone/name extraction
     extracted_text_preview: str
     used_gemini_fallback: bool = False
 
@@ -42,20 +43,24 @@ class ParsedResume:
 def parse_resume(contents: bytes, filename: str, content_type: str) -> ParsedResume:
     """
     Dispatch to the correct parser based on content_type.
-    Returns a ParsedResume with a 500-char text preview.
+    Extracts raw text AND a pre-clean snapshot for contact extraction.
     """
     used_gemini = False
+    raw_text = ""  # uncleaned — used for contact extraction
     if content_type in _PDF_TYPES:
-        text, used_gemini = _parse_pdf(contents)
+        text, used_gemini, raw_text = _parse_pdf(contents)
         detected = "pdf"
     elif content_type in _DOCX_TYPES:
-        text    = _parse_docx(contents)
+        text = _parse_docx(contents)
+        raw_text = text
         detected = "docx"
     elif content_type in _DOC_TYPES:
-        text    = contents.decode("latin-1", errors="replace")
+        text = contents.decode("latin-1", errors="replace")
+        raw_text = text
         detected = "doc"
     else:
-        text    = ""
+        text = ""
+        raw_text = ""
         detected = "unknown"
 
     return ParsedResume(
@@ -63,6 +68,7 @@ def parse_resume(contents: bytes, filename: str, content_type: str) -> ParsedRes
         size_bytes=len(contents),
         detected_type=detected,
         full_text=text,
+        raw_text_for_contacts=raw_text,
         extracted_text_preview=text[:_PREVIEW_CHARS].strip(),
         used_gemini_fallback=used_gemini,
     )
@@ -111,42 +117,35 @@ def _extract_pdfplumber(contents: bytes) -> str:
     return "\n".join(pages)
 
 
-def _parse_pdf(contents: bytes) -> tuple[str, bool]:
+def _parse_pdf(contents: bytes) -> tuple[str, bool, str]:
     """
-    Dual-parser PDF extraction with heading-confidence fallback.
-
-    Strategy
-    --------
-    1. Run pypdf (primary) and clean the output.
-    2. Score the cleaned text by counting standalone major headings.
-    3. If score >= threshold  →  return pypdf result (fast path).
-    4. Otherwise run pdfplumber (fallback) and clean its output.
-    5. If pdfplumber also scores low (graphic/column resume) → Gemini fallback.
-    6. Returns (text, used_gemini_fallback).
+    Returns (cleaned_text, used_gemini, raw_text_for_contacts).
+    raw_text_for_contacts is the best uncleaned text — used for email/phone extraction
+    before the cleanup pipeline corrupts them.
     """
     pypdf_raw     = _extract_pypdf(contents)
     pypdf_cleaned = _clean_pdf_text(pypdf_raw)
     pypdf_score   = _score_headings(pypdf_cleaned)
 
     if pypdf_score >= _HEADING_CONFIDENCE_THRESHOLD:
-        return pypdf_cleaned, False
+        return pypdf_cleaned, False, pypdf_raw
 
-    # Low confidence — try pdfplumber
     plumber_raw     = _extract_pdfplumber(contents)
     plumber_cleaned = _clean_pdf_text(plumber_raw)
     plumber_score   = _score_headings(plumber_cleaned)
 
-    best_text  = plumber_cleaned if plumber_score > pypdf_score else pypdf_cleaned
-    best_score = max(pypdf_score, plumber_score)
+    if plumber_score >= pypdf_score:
+        best_text, best_raw, best_score = plumber_cleaned, plumber_raw, plumber_score
+    else:
+        best_text, best_raw, best_score = pypdf_cleaned, pypdf_raw, pypdf_score
 
-    # Still low confidence — graphic/column resume, use Gemini structured extraction
     if best_score < _HEADING_CONFIDENCE_THRESHOLD:
         log.info("parser: low heading confidence (%d) — trying Gemini fallback", best_score)
         gemini_text = _gemini_text_fallback(best_text)
         if gemini_text:
-            return gemini_text, True
+            return gemini_text, True, best_raw
 
-    return best_text, False
+    return best_text, False, best_raw
 
 
 _GEMINI_EXTRACT_PROMPT = """\
@@ -292,14 +291,31 @@ def _clean_pdf_text(raw: str) -> str:
     # e.g. "-/ envelpe" → removes the "-/" artifact from contact headers
     text = re.sub(r"(?<=[\s])-/\s*", " ", text)
 
-    # ------------------------------------------------------------------
     # Pass 3 — Restore missing spaces
-    # ------------------------------------------------------------------
+    # Guard: protect emails before applying space fixes
+    # temporarily mask emails so cleanup doesn't corrupt them
+    _email_placeholders: list[str] = []
+    def _mask_emails(t: str) -> str:
+        import re as _re
+        _simple_email = _re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
+        result = t
+        for i, m in enumerate(_simple_email.finditer(t)):
+            placeholder = f"__EMAIL{i}__"
+            _email_placeholders.append(m.group(0))
+            result = result.replace(m.group(0), placeholder, 1)
+        return result
+    def _unmask_emails(t: str) -> str:
+        for i, email in enumerate(_email_placeholders):
+            t = t.replace(f"__EMAIL{i}__", email)
+        return t
+
+    text = _mask_emails(text)
     text = _CAMEL_SPLIT.sub(r"\1 \2", text)
     text = _SPACE_BEFORE_PAREN.sub(r"\1 (", text)
     text = _SPACE_AFTER_PAREN.sub(r") \1", text)
     text = _SPACE_AFTER_COMMA.sub(r"\1 \2", text)
     text = _SPACE_AROUND_SLASH.sub(r"\1 / \2", text)
+    text = _unmask_emails(text)
 
     # ------------------------------------------------------------------
     # Pass 4 — Repair broken words split across lines by PDF layout
