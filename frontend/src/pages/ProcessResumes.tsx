@@ -72,26 +72,20 @@ export default function ProcessResumes() {
         }
         const profile = upload.profile_summary;
         const displayName = profile.full_name || displayNameFromFilename(upload.filename || file.name);
-        const email = profile.email || `${makeCandidateId(file.name, i)}@fairhire.local`;
+        // Build a stable fallback email — use phone if available so dedup works across uploads
+        const fallbackEmail = profile.phone
+          ? `${profile.phone.replace(/\D/g, "")}@fairhire.local`
+          : `${makeCandidateId(file.name, i)}@fairhire.local`;
+        const email = profile.email || fallbackEmail;
         setCurrentStep(`Scoring ${displayName}…`);
         const { data: match } = await matchService.matchJd({ job_description: jobDescription.trim(), candidate_profile: { skills: profile.skills ?? [], education: profile.education ?? [], certifications: profile.certifications ?? [], experience_years: profile.experience_years ?? null, resume_text: upload.extracted_text_preview } });
         setCurrentStep(`Saving ${displayName}…`);
         let candidateId: string;
-        try {
-          const { data: c } = await candidateService.create({ full_name: displayName, email, phone: profile.phone ?? null, resume_text: upload.full_text || upload.extracted_text_preview || null });
-          candidateId = c.id;
-        } catch {
-          const { data: all } = await candidateService.list();
-          const ex = all.find((c) => c.email === email);
-          if (!ex) { processed.push({ name: displayName, email, phone: profile.phone ?? null, fitScore: match.fit_score, matchedSkills: match.matched_skills, missingSkills: match.missing_skills, links: upload.verified_links ?? [], status: "error", error: "Could not save candidate" }); continue; }
-          candidateId = ex.id;
-        }
-        try {
-          await applicationService.create({ job_id: activeJob.id, candidate_id: candidateId, resume_score: match.fit_score, matched_skills: match.matched_skills, missing_skills: match.missing_skills });
-          processed.push({ name: displayName, email, phone: profile.phone ?? null, fitScore: match.fit_score, matchedSkills: match.matched_skills, missingSkills: match.missing_skills, links: upload.verified_links ?? [], status: "saved" });
-        } catch {
-          processed.push({ name: displayName, email, phone: profile.phone ?? null, fitScore: match.fit_score, matchedSkills: match.matched_skills, missingSkills: match.missing_skills, links: upload.verified_links ?? [], status: "duplicate" });
-        }
+        // Backend now upserts — no try/catch needed for duplicates
+        const { data: c } = await candidateService.create({ full_name: displayName, email, phone: profile.phone ?? null, resume_text: upload.full_text || upload.extracted_text_preview || null });
+        candidateId = c.id;
+        await applicationService.create({ job_id: activeJob.id, candidate_id: candidateId, resume_score: match.fit_score, matched_skills: match.matched_skills, missing_skills: match.missing_skills });
+        processed.push({ name: displayName, email, phone: profile.phone ?? null, fitScore: match.fit_score, matchedSkills: match.matched_skills, missingSkills: match.missing_skills, links: upload.verified_links ?? [], status: "saved" });
       } catch (e) {
         processed.push({ name: file.name, email: "", phone: null, fitScore: 0, matchedSkills: [], missingSkills: [], links: [], status: "error", error: getApiErrorMessage(e, "Processing failed") });
       }

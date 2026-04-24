@@ -485,6 +485,11 @@ _HEADING_WORDS_SET = {
     "certifications", "projects", "contact", "references", "awards",
     "publications", "volunteer", "languages", "resume", "curriculum", "vitae",
     "declaration", "hobbies", "interests", "achievements",
+    # multi-word headings that appear as ALL-CAPS in PDFs
+    "relevant coursework", "coursework", "technical skills", "work experience",
+    "professional experience", "personal projects", "academic projects",
+    "key skills", "core competencies", "employment history", "career objective",
+    "professional summary", "areas of expertise", "tools and technologies",
 }
 
 # Contact section signal — lines containing these are likely in the header
@@ -577,18 +582,39 @@ def _extract_name(text: str) -> str | None:
     """
     Extract candidate name — scans first 15 lines.
     Handles: normal case, ALL CAPS, hyphenated names.
-    Skips lines with emails, URLs, phone numbers, or heading words.
+    If a line has both name and email, extracts just the name part.
+    Fallback: derives name from email local part if no standalone name found.
     """
     lines = text.splitlines()[:15]
+    first_email = None
+
     for line in lines:
         line = line.strip()
-        if not line or len(line) > 55:
+        if not line or len(line) > 120:
             continue
-        # Skip lines with contact info
-        if "@" in line or "http" in line or "/" in line:
+
+        # If line contains an email, strip everything from @ onwards and try the remainder
+        if "@" in line:
+            # Capture the email for fallback
+            if not first_email:
+                m = _EMAIL_RE.search(line)
+                if m:
+                    first_email = m.group(1)
+            # Take only the part before the email address
+            email_pos = line.index("@")
+            start = email_pos
+            while start > 0 and line[start - 1] not in (" ", "\t", "|", ","):
+                start -= 1
+            line = line[:start].strip()
+            if not line:
+                continue
+
+        # Skip lines with URLs or phone numbers
+        if "http" in line or "/" in line:
             continue
         if _PHONE_RE.search(line):
             continue
+
         words = line.split()
         if len(words) < 2 or len(words) > 5:
             continue
@@ -598,13 +624,27 @@ def _extract_name(text: str) -> str | None:
             continue
         if line.lower().rstrip(":") in _HEADING_WORDS_SET:
             continue
-        # ALL CAPS names (common in Indian/international resumes)
+
+        # ALL CAPS names
         if line.isupper():
             if all(w.replace("-", "").isalpha() for w in words):
-                return line.title()
+                candidate = line.title()
+                if " ".join(words).lower() not in _HEADING_WORDS_SET:
+                    return candidate
             continue
-        # Normal or title case — allow hyphens in names
-        clean = [w.replace("-", "") for w in words]
-        if all(w and w[0].isupper() and w.replace("'", "").isalpha() for w in clean):
+
+        # Normal / title case
+        clean = [w.replace("-", "").replace("'", "") for w in words]
+        if all(w and w[0].isupper() and w.isalpha() for w in clean):
             return line
+
+    # Fallback: derive name from email local part if no standalone name found
+    if first_email:
+        local = first_email.split("@")[0]
+        # Remove numbers and special chars, split on dots/underscores
+        parts = re.split(r"[._\-\d]+", local)
+        name_parts = [p.capitalize() for p in parts if p and len(p) > 1]
+        if len(name_parts) >= 2:
+            return " ".join(name_parts[:3])
+
     return None

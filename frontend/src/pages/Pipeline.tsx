@@ -79,10 +79,8 @@ function OfferDraftModal({
 const STAGES = [
   { key: "applied",      label: "Applied",      color: "border-t-slate-400",  bg: "bg-slate-50"  },
   { key: "shortlisted",  label: "Shortlisted",  color: "border-t-cyan-400",   bg: "bg-cyan-50"   },
-  { key: "test_sent",    label: "Test Sent",    color: "border-t-sky-400",    bg: "bg-sky-50"    },
-  { key: "tested",       label: "Assessment",   color: "border-t-blue-400",   bg: "bg-blue-50"   },
-  { key: "interview_1",  label: "Round 1",      color: "border-t-amber-400",  bg: "bg-amber-50"  },
-  { key: "interview_2",  label: "Round 2",      color: "border-t-purple-400", bg: "bg-purple-50" },
+  { key: "testing",      label: "Testing",      color: "border-t-sky-400",    bg: "bg-sky-50"    },
+  { key: "interviewing", label: "Interviewing", color: "border-t-amber-400",  bg: "bg-amber-50"  },
   { key: "offered",      label: "Offered",      color: "border-t-green-400",  bg: "bg-green-50"  },
   { key: "rejected",     label: "Rejected",     color: "border-t-red-300",    bg: "bg-red-50"    },
 ] as const;
@@ -286,8 +284,7 @@ function ScheduleModal({
         interviewer_id: interviewerId.trim() || null,
         notes: notes || null,
       });
-      const targetStage = roundNumber === 1 ? "interview_1" : "interview_2";
-      const { data: updatedApp } = await applicationService.advanceStage(app.id, targetStage);
+      const { data: updatedApp } = await applicationService.advanceStage(app.id, "interviewing");
       onScheduled(updatedApp);
       onClose();
     } catch (e) {
@@ -356,7 +353,7 @@ function CandidateCard({
   app: ApplicationRecord;
   selected: boolean;
   onSelect: (id: string) => void;
-  onAction: (action: "shortlist" | "test" | "testscore" | "interview1" | "interview2" | "reject" | "offer", app: ApplicationRecord) => void;
+  onAction: (action: "shortlist" | "test" | "testscore" | "interview" | "reject" | "offer", app: ApplicationRecord) => void;
 }) {
   const score = app.final_score ?? app.resume_score;
 
@@ -414,25 +411,19 @@ function CandidateCard({
               <Send className="h-3 w-3" /> Send Test
             </button>
           )}
-          {(app.stage === "test_sent" || app.stage === "tested") && (
+          {app.stage === "testing" && (
             <button onClick={() => onAction("testscore", app)}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:bg-white/15">
               <Award className="h-3 w-3" /> Enter Score
             </button>
           )}
-          {(app.stage === "applied" || app.stage === "shortlisted" || app.stage === "tested") && (
-            <button onClick={() => onAction("interview1", app)}
+          {(app.stage === "shortlisted" || app.stage === "testing") && (
+            <button onClick={() => onAction("interview", app)}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30 text-xs font-semibold text-amber-300 hover:bg-amber-500/30">
-              <Calendar className="h-3 w-3" /> Round 1
+              <Calendar className="h-3 w-3" /> Interview
             </button>
           )}
-          {app.stage === "interview_1" && (
-            <button onClick={() => onAction("interview2", app)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 text-xs font-semibold text-purple-300 hover:bg-purple-500/30">
-              <Calendar className="h-3 w-3" /> Round 2
-            </button>
-          )}
-          {(app.stage === "interview_1" || app.stage === "interview_2") && (
+          {app.stage === "interviewing" && (
             <button onClick={() => onAction("offer", app)}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30">
               <Award className="h-3 w-3" /> Offer
@@ -462,7 +453,7 @@ export default function Pipeline() {
 
   const [testModal, setTestModal] = useState<ApplicationRecord | null>(null);
   const [testScoreModal, setTestScoreModal] = useState<ApplicationRecord | null>(null);
-  const [scheduleModal, setScheduleModal] = useState<{ app: ApplicationRecord; round: number } | null>(null);
+  const [scheduleModal, setScheduleModal] = useState<ApplicationRecord | null>(null);
   const [offerModal, setOfferModal] = useState<ApplicationRecord | null>(null);
   const [rejectModal, setRejectModal] = useState<ApplicationRecord | null>(null);
   const [rejectLoading, setRejectLoading] = useState(false);
@@ -487,7 +478,7 @@ export default function Pipeline() {
   useEffect(() => { load(); }, [load]);
 
   const handleAction = async (
-    action: "shortlist" | "test" | "testscore" | "interview1" | "interview2" | "reject" | "offer",
+    action: "shortlist" | "test" | "testscore" | "interview" | "reject" | "offer",
     app: ApplicationRecord,
   ) => {
     if (action === "shortlist") {
@@ -500,8 +491,7 @@ export default function Pipeline() {
     }
     if (action === "test") { setTestModal(app); return; }
     if (action === "testscore") { setTestScoreModal(app); return; }
-    if (action === "interview1") { setScheduleModal({ app, round: 1 }); return; }
-    if (action === "interview2") { setScheduleModal({ app, round: 2 }); return; }
+    if (action === "interview") { setScheduleModal(app); return; }
     if (action === "offer") { setOfferModal(app); return; }
     if (action === "reject") { setRejectModal(app); return; }
   };
@@ -701,8 +691,8 @@ export default function Pipeline() {
 
       {scheduleModal && (
         <ScheduleModal
-          app={scheduleModal.app}
-          roundNumber={scheduleModal.round}
+          app={scheduleModal}
+          roundNumber={1}
           onClose={() => setScheduleModal(null)}
           onScheduled={(updatedApp) => {
             setApplications((prev) => prev.map((a) => a.id === updatedApp.id ? updatedApp : a));

@@ -21,23 +21,15 @@ from services.email_service import (
 log = logging.getLogger(__name__)
 
 STAGES = [
-    "applied", "shortlisted", "test_sent", "test_completed",
-    "tech_interview_scheduled", "tech_interview_completed",
-    "hr_interview_scheduled", "hr_interview_completed",
-    "offer_sent", "hired", "rejected",
+    "applied", "shortlisted", "testing", "interviewing", "offered", "rejected",
 ]
 
 STAGE_LABELS = {
     "applied": "Applied",
     "shortlisted": "Shortlisted",
-    "test_sent": "Test Sent",
-    "test_completed": "Test Completed",
-    "tech_interview_scheduled": "Tech Interview Scheduled",
-    "tech_interview_completed": "Tech Interview Done",
-    "hr_interview_scheduled": "HR Interview Scheduled",
-    "hr_interview_completed": "HR Interview Done",
-    "offer_sent": "Offer Sent",
-    "hired": "Hired",
+    "testing": "Testing",
+    "interviewing": "Interviewing",
+    "offered": "Offered",
     "rejected": "Rejected",
 }
 

@@ -326,6 +326,22 @@ def _clean_pdf_text(raw: str) -> str:
     text = _unmask_contacts(text)
 
     # ------------------------------------------------------------------
+    # Pass 3b — Rejoin ALL-CAPS words broken by PDF kerning/ligature
+    #
+    # e.g. "RELEV ANT" → "RELEVANT", "COURS EWORK" → "COURSEWORK"
+    # Fires when both fragments are ALL-CAPS alpha and combined length ≤ 20.
+    # ------------------------------------------------------------------
+    text = re.sub(
+        r"\b([A-Z]{2,})[ \t]+([A-Z]{2,})\b",
+        lambda m: (
+            m.group(1) + m.group(2)
+            if len(m.group(1)) + len(m.group(2)) <= 20
+            else m.group(0)
+        ),
+        text,
+    )
+
+    # ------------------------------------------------------------------
     # Pass 4 — Repair broken words split across lines by PDF layout
     #
     # Heuristic: if a line ends with a lowercase letter (no punctuation)

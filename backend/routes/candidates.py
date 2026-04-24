@@ -1,6 +1,6 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.session import get_db
@@ -12,7 +12,7 @@ router = APIRouter()
 
 class CandidateIn(BaseModel):
     full_name: str
-    email: EmailStr
+    email: str
     phone: str | None = None
     resume_text: str | None = None
     job_title: str | None = None   # used for acknowledgement email only
@@ -30,11 +30,11 @@ class CandidateOut(BaseModel):
 
 @router.post("/", response_model=CandidateOut, status_code=201)
 async def create_candidate(body: CandidateIn, db: AsyncSession = Depends(get_db)):
-    candidate = await candidate_service.create(
+    candidate, created = await candidate_service.get_or_create(
         db, body.full_name, body.email, body.resume_text, body.phone
     )
-    # Fire-and-forget acknowledgement email
-    if body.job_title:
+    # Fire-and-forget acknowledgement email only for genuinely new candidates
+    if created and body.job_title:
         await send_application_acknowledgement(
             candidate_email=candidate.email,
             candidate_name=candidate.full_name,

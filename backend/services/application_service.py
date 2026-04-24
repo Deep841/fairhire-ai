@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import select
+from sqlalchemy import select, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Application
@@ -21,11 +21,32 @@ async def create(
     matched_skills: list[str] | None = None,
     missing_skills: list[str] | None = None,
 ) -> Application:
+    # SQLite stores UUIDs as 32-char hex without hyphens.
+    # Cast both sides to String and match against both formats to support SQLite + PostgreSQL.
+    job_id_hex = job_id.hex
+    cand_id_hex = candidate_id.hex
+    result = await db.execute(
+        select(Application).where(
+            cast(Application.job_id, String).in_([str(job_id), job_id_hex]),
+            cast(Application.candidate_id, String).in_([str(candidate_id), cand_id_hex]),
+        ).limit(1)
+    )
+    existing = result.scalars().first()
+    if existing:
+        existing.resume_score = resume_score
+        existing.final_score = resume_score
+        existing.matched_skills = matched_skills or []
+        existing.missing_skills = missing_skills or []
+        existing.updated_at = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(existing)
+        return existing
+
     app = Application(
         job_id=job_id,
         candidate_id=candidate_id,
         resume_score=resume_score,
-        final_score=resume_score,  # starts as resume score until test/interview added
+        final_score=resume_score,
         matched_skills=matched_skills or [],
         missing_skills=missing_skills or [],
     )
@@ -68,12 +89,12 @@ async def record_test_score(
     app: Application,
     test_score: float,
 ) -> Application:
-    _STAGE_ORDER = ["applied", "shortlisted", "test_sent", "tested", "interview_1", "interview_2", "offered", "rejected"]
+    _STAGE_ORDER = ["applied", "shortlisted", "testing", "interviewing", "offered", "rejected"]
     app.test_score = test_score
-    # Only advance to "tested", never regress a candidate already further along
+    # Only advance to "testing", never regress a candidate already further along
     current_idx = _STAGE_ORDER.index(app.stage) if app.stage in _STAGE_ORDER else 0
-    if current_idx < _STAGE_ORDER.index("tested"):
-        app.stage = "tested"
+    if current_idx < _STAGE_ORDER.index("testing"):
+        app.stage = "testing"
     app.final_score = _compute_final(app)
     app.updated_at = datetime.now(timezone.utc)
     await db.commit()
@@ -87,13 +108,12 @@ async def record_interview_score(
     score: float,
     round_number: int,
 ) -> Application:
-    _STAGE_ORDER = ["applied", "shortlisted", "test_sent", "tested", "interview_1", "interview_2", "offered", "rejected"]
+    _STAGE_ORDER = ["applied", "shortlisted", "testing", "interviewing", "offered", "rejected"]
     if round_number == 1:
         app.interview_score = score
-        target_stage = "interview_1"
     else:
         app.hr_interview_score = score
-        target_stage = "interview_2"
+    target_stage = "interviewing"
     # Only advance stage, never regress
     current_idx = _STAGE_ORDER.index(app.stage) if app.stage in _STAGE_ORDER else 0
     target_idx = _STAGE_ORDER.index(target_stage)

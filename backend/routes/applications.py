@@ -272,7 +272,7 @@ async def send_test_link_route(
             test_link=body.test_link,
             deadline=body.deadline,
         )
-    app = await application_service.update_stage(db, app, "test_sent")
+    app = await application_service.update_stage(db, app, "testing")
     return await _enrich(db, app)
 
 

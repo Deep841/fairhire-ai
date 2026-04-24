@@ -65,7 +65,7 @@ class Application(Base):
 
     stage: Mapped[str] = mapped_column(
         String(50), default="applied"
-    )  # applied | shortlisted | test_sent | tested | interview_1 | interview_2 | offered | rejected
+    )  # applied | shortlisted | testing | interviewing | offered | rejected
     status: Mapped[str] = mapped_column(String(50), default="active")
 
     matched_skills: Mapped[list | None] = mapped_column(JSON)
