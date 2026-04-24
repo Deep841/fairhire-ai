@@ -1,0 +1,6 @@
+Tables in facehire database:
+  applications: ['id', 'job_id', 'candidate_id', 'resume_score', 'test_score', 'interview_score', 'hr_interview_score', 'final_score', 'resume_weight', 'test_weight', 'stage', 'status', 'matched_skills', 'missing_skills', 'applied_at', 'updated_at']
+  candidates: ['id', 'full_name', 'email', 'phone', 'resume_text']
+  hr_users: ['id', 'email', 'hashed_password', 'full_name', 'role', 'is_active', 'created_at']
+  interviews: ['id', 'candidate_id', 'job_id', 'application_id', 'round_number', 'interviewer_id', 'status', 'scheduled_at', 'meet_link', 'notes', 'score', 'feedback']
+  jobs: ['id', 'title', 'description', 'form_url', 'published_platforms', 'created_by', 'deadline', 'status', 'created_at']

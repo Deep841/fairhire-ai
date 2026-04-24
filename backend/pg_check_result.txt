@@ -1,0 +1,2 @@
+PASSWORD WORKS: 'postgres'
+Databases: ['postgres', 'facehire']
