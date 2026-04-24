@@ -81,107 +81,71 @@ function PublishPanel({ job, onDone }: { job: JobRecord; onDone: () => void }) {
   };
 
   return (
-    <div className="mt-4 p-5 rounded-xl bg-slate-50 border border-gray-200 space-y-4">
-      <p className="text-sm font-semibold text-gray-800">Publish to platforms</p>
-
-      {/* Platform toggles */}
+    <div className="mt-4 p-5 rounded-xl bg-white/5 border border-white/10 space-y-4">
+      <p className="text-sm font-semibold text-white">Publish to platforms</p>
       <div className="flex flex-wrap gap-2">
         {PLATFORMS.map(({ id, label, icon: Icon, color, bg }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => toggle(id)}
+          <button key={id} type="button" onClick={() => toggle(id)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
               selected.has(id)
-                ? `${bg} ${color} ring-2 ring-offset-1 ring-blue-400`
-                : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            {label}
+                ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300 ring-1 ring-emerald-400/30"
+                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+            }`}>
+            <Icon className="h-3.5 w-3.5" />{label}
           </button>
         ))}
       </div>
-
-      <button
-        type="button"
-        onClick={handlePublish}
-        disabled={publishing || selected.size === 0}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
-      >
+      <button type="button" onClick={handlePublish} disabled={publishing || selected.size === 0}
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
         {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
         {publishing ? "Publishing…" : "Publish selected"}
       </button>
-
-      {/* Results */}
       {results.length > 0 && (
         <div className="space-y-3">
           {results.map((r) => (
-            <div
-              key={r.platform}
-              className={`p-3 rounded-xl border text-sm ${
-                r.success ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"
-              }`}
-            >
+            <div key={r.platform} className={`p-3 rounded-xl border text-sm ${
+              r.success ? "bg-emerald-500/15 border-emerald-500/30" : "bg-amber-500/15 border-amber-500/30"
+            }`}>
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <PlatformBadge platform={r.platform} />
-                  <span className={r.success ? "text-green-800" : "text-amber-800"}>
+                  <span className={r.success ? "text-emerald-300" : "text-amber-300"}>
                     {r.success ? "Published" : "Not published"}
                   </span>
                 </div>
                 {r.url && (
-                  <a
-                    href={r.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:underline"
-                  >
+                  <a href={r.url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:underline">
                     Open <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
               </div>
-              {/* For Naukri — show copy-ready text */}
               {r.platform === "naukri" && !r.success === false && r.message.length > 50 && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-500">Copy-ready post for Naukri:</span>
-                    <button
-                      type="button"
-                      onClick={() => copyText(r.message, "naukri")}
-                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
-                    >
-                      <Copy className="h-3 w-3" />
-                      {copied === "naukri" ? "Copied!" : "Copy"}
+                    <span className="text-xs text-slate-400">Copy-ready post for Naukri:</span>
+                    <button type="button" onClick={() => copyText(r.message, "naukri")}
+                      className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:underline">
+                      <Copy className="h-3 w-3" />{copied === "naukri" ? "Copied!" : "Copy"}
                     </button>
                   </div>
-                  <pre className="text-xs text-gray-700 bg-white border border-gray-200 rounded-lg p-2 whitespace-pre-wrap max-h-32 overflow-y-auto">
-                    {r.message}
-                  </pre>
+                  <pre className="text-xs text-slate-300 bg-white/5 border border-white/10 rounded-lg p-2 whitespace-pre-wrap max-h-32 overflow-y-auto">{r.message}</pre>
                 </div>
               )}
-              {/* For X draft */}
               {r.platform === "x" && !r.success && r.message.includes("Draft tweet") && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-500">Draft tweet (enable X in .env to auto-post):</span>
-                    <button
-                      type="button"
-                      onClick={() => copyText(r.message.split("Draft tweet:\n\n")[1] ?? r.message, "x")}
-                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
-                    >
-                      <Copy className="h-3 w-3" />
-                      {copied === "x" ? "Copied!" : "Copy"}
+                    <span className="text-xs text-slate-400">Draft tweet:</span>
+                    <button type="button" onClick={() => copyText(r.message.split("Draft tweet:\n\n")[1] ?? r.message, "x")}
+                      className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:underline">
+                      <Copy className="h-3 w-3" />{copied === "x" ? "Copied!" : "Copy"}
                     </button>
                   </div>
-                  <pre className="text-xs text-gray-700 bg-white border border-gray-200 rounded-lg p-2 whitespace-pre-wrap">
-                    {r.message.split("Draft tweet:\n\n")[1] ?? r.message}
-                  </pre>
+                  <pre className="text-xs text-slate-300 bg-white/5 border border-white/10 rounded-lg p-2 whitespace-pre-wrap">{r.message.split("Draft tweet:\n\n")[1] ?? r.message}</pre>
                 </div>
               )}
-              {/* Google Forms not configured */}
               {r.platform === "google_form" && !r.success && (
-                <p className="mt-1 text-xs text-amber-700">{r.message}</p>
+                <p className="mt-1 text-xs text-amber-300">{r.message}</p>
               )}
             </div>
           ))}
@@ -306,7 +270,7 @@ export default function Jobs() {
 
       {loading && jobs.length === 0 ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+          <Loader2 className="h-8 w-8 text-emerald-400 animate-spin" />
         </div>
       ) : jobs.length === 0 ? (
         <div className="glass rounded-2xl shadow-card p-8 text-center">

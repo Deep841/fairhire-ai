@@ -47,34 +47,27 @@ function OfferDraftModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg p-6 space-y-4">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="glass rounded-2xl shadow-card w-full max-w-lg p-6 space-y-4">
         <div className="flex items-center gap-2">
-          <Edit3 className="h-5 w-5 text-green-600" />
-          <h2 className="text-lg font-bold text-gray-900">Offer Letter Draft</h2>
+          <Edit3 className="h-5 w-5 text-emerald-400" />
+          <h2 className="text-lg font-bold text-white">Offer Letter Draft</h2>
         </div>
-        <p className="text-sm text-gray-500">AI-generated for <strong>{app.candidate_name}</strong>. Edit before sending.</p>
+        <p className="text-sm text-slate-400">AI-generated for <strong className="text-white">{app.candidate_name}</strong>. Edit before sending.</p>
         {loading ? (
-          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-blue-600" /></div>
+          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-emerald-400" /></div>
         ) : (
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            rows={12}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 resize-y"
-          />
+          <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={12}
+            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y" />
         )}
-        {error && <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">{error}</p>}
+        {error && <p className="text-sm text-red-300 bg-red-500/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
         <div className="flex gap-3 pt-2">
-          <button
-            onClick={handleSend}
-            disabled={sending || loading}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50"
-          >
+          <button onClick={handleSend} disabled={sending || loading}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             {sending ? "Sending offer…" : "Send offer email"}
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
         </div>
       </div>
     </div>
@@ -105,24 +98,20 @@ function RejectConfirmModal({ name, onConfirm, onClose, loading }: {
   loading: boolean;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-sm p-6 space-y-4">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="glass rounded-2xl shadow-card w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="bg-red-100 rounded-full p-2">
-            <XCircle className="h-5 w-5 text-red-600" />
-          </div>
-          <h2 className="text-lg font-bold text-gray-900">Reject Candidate?</h2>
+          <div className="bg-red-500/20 rounded-full p-2"><XCircle className="h-5 w-5 text-red-400" /></div>
+          <h2 className="text-lg font-bold text-white">Reject Candidate?</h2>
         </div>
-        <p className="text-sm text-gray-600">
-          A rejection email will be sent to <strong>{name}</strong>. This cannot be undone.
-        </p>
+        <p className="text-sm text-slate-400">A rejection email will be sent to <strong className="text-white">{name}</strong>. This cannot be undone.</p>
         <div className="flex gap-3 pt-2">
           <button onClick={onConfirm} disabled={loading}
             className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
             {loading ? "Rejecting…" : "Yes, reject & notify"}
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
         </div>
       </div>
     </div>
@@ -169,28 +158,26 @@ function TestScoreModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-sm p-6 space-y-4">
-        <h2 className="text-lg font-bold text-gray-900">Enter Test Score</h2>
-        <p className="text-sm text-gray-500">Candidate: <strong>{app.candidate_name}</strong></p>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="glass rounded-2xl shadow-card w-full max-w-sm p-6 space-y-4">
+        <h2 className="text-lg font-bold text-white">Enter Test Score</h2>
+        <p className="text-sm text-slate-400">Candidate: <strong className="text-white">{app.candidate_name}</strong></p>
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-1.5">Score (0–100)</label>
-          <input
-            type="number" min="0" max="100" value={score}
+          <label className="block text-sm font-semibold text-slate-300 mb-1.5">Score (0–100)</label>
+          <input type="number" min="0" max="100" value={score}
             onChange={(e) => setScore(e.target.value)}
             placeholder="e.g. 78"
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            autoFocus
-          />
+            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-500"
+            autoFocus />
         </div>
-        {error && <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">{error}</p>}
+        {error && <p className="text-sm text-red-300 bg-red-500/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
         <div className="flex gap-3 pt-2">
           <button onClick={handleSave} disabled={saving || !score}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Award className="h-4 w-4" />}
             {saving ? "Saving…" : "Save & re-rank"}
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
         </div>
       </div>
     </div>
@@ -229,42 +216,29 @@ function TestLinkModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md p-6 space-y-4">
-        <h2 className="text-lg font-bold text-gray-900">Send Assessment Link</h2>
-        <p className="text-sm text-gray-600">Sending to <strong>{app.candidate_name}</strong></p>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="glass rounded-2xl shadow-card w-full max-w-md p-6 space-y-4">
+        <h2 className="text-lg font-bold text-white">Send Assessment Link</h2>
+        <p className="text-sm text-slate-400">Sending to <strong className="text-white">{app.candidate_name}</strong></p>
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-1.5">Test / Assessment URL</label>
-          <input
-            type="url"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
+          <label className="block text-sm font-semibold text-slate-300 mb-1.5">Test / Assessment URL</label>
+          <input type="url" value={link} onChange={(e) => setLink(e.target.value)}
             placeholder="https://hackerrank.com/test/..."
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-500" />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-1.5">Deadline (optional)</label>
-          <input
-            type="date"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <label className="block text-sm font-semibold text-slate-300 mb-1.5">Deadline (optional)</label>
+          <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
         </div>
-        {error && <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">{error}</p>}
+        {error && <p className="text-sm text-red-300 bg-red-500/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
         <div className="flex gap-3 pt-2">
-          <button
-            onClick={handleSend}
-            disabled={sending || !link.trim()}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
-          >
+          <button onClick={handleSend} disabled={sending || !link.trim()}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {sending ? "Sending…" : "Send link"}
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-            Cancel
-          </button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
         </div>
       </div>
     </div>
@@ -324,47 +298,47 @@ function ScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md p-6 space-y-4">
-        <h2 className="text-lg font-bold text-gray-900">Schedule Round {roundNumber} Interview</h2>
-        <p className="text-sm text-gray-600">Candidate: <strong>{app.candidate_name}</strong></p>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="glass rounded-2xl shadow-card w-full max-w-md p-6 space-y-4">
+        <h2 className="text-lg font-bold text-white">Schedule Round {roundNumber} Interview</h2>
+        <p className="text-sm text-slate-400">Candidate: <strong className="text-white">{app.candidate_name}</strong></p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1.5">Date</label>
+            <label className="block text-sm font-semibold text-slate-300 mb-1.5">Date</label>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1.5">Time</label>
+            <label className="block text-sm font-semibold text-slate-300 mb-1.5">Time</label>
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-1.5">Interviewer ID (optional)</label>
+          <label className="block text-sm font-semibold text-slate-300 mb-1.5">Interviewer ID (optional)</label>
           <input type="text" value={interviewerId} onChange={(e) => setInterviewerId(e.target.value)}
-            placeholder="Paste interviewer UUID from HR Users"
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            placeholder="Paste interviewer UUID"
+            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-500" />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-1.5">Meet link (optional)</label>
+          <label className="block text-sm font-semibold text-slate-300 mb-1.5">Meet link (optional)</label>
           <input type="url" value={meetLink} onChange={(e) => setMeetLink(e.target.value)}
             placeholder="https://meet.google.com/..."
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-500" />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-1.5">Notes</label>
+          <label className="block text-sm font-semibold text-slate-300 mb-1.5">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none placeholder:text-slate-500" />
         </div>
-        {error && <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">{error}</p>}
+        {error && <p className="text-sm text-red-300 bg-red-500/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
         <div className="flex gap-3 pt-2">
           <button onClick={handleSchedule} disabled={saving}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
             {saving ? "Scheduling…" : "Schedule & notify"}
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
         </div>
       </div>
     </div>
@@ -387,27 +361,21 @@ function CandidateCard({
   const score = app.final_score ?? app.resume_score;
 
   return (
-    <div className={`bg-white rounded-xl border shadow-sm p-4 space-y-3 transition-all ${
-      selected ? "border-blue-400 ring-2 ring-blue-200" : "border-gray-200"
+    <div className={`glass rounded-xl p-4 space-y-3 transition-all ${
+      selected ? "border-emerald-400/60 ring-1 ring-emerald-400/30" : ""
     }`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={() => onSelect(app.id)}
-            className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 flex-shrink-0 cursor-pointer"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <UserCircle className="h-7 w-7 text-gray-300 flex-shrink-0" />
+          <input type="checkbox" checked={selected} onChange={() => onSelect(app.id)}
+            className="h-3.5 w-3.5 rounded border-white/20 bg-white/10 text-emerald-500 flex-shrink-0 cursor-pointer"
+            onClick={(e) => e.stopPropagation()} />
+          <UserCircle className="h-7 w-7 text-slate-600 flex-shrink-0" />
           <div className="min-w-0">
-            <Link
-              to={`/candidates/${app.candidate_id}`}
-              className="text-sm font-semibold text-blue-700 hover:underline truncate block"
-            >
+            <Link to={`/candidates/${app.candidate_id}`}
+              className="text-sm font-semibold text-emerald-400 hover:underline truncate block">
               {app.candidate_name}
             </Link>
-            <p className="text-xs text-gray-500 truncate">{app.candidate_email}</p>
+            <p className="text-xs text-slate-500 truncate">{app.candidate_email}</p>
           </div>
         </div>
         {score !== null && (
@@ -417,91 +385,64 @@ function CandidateCard({
         )}
       </div>
 
-      {/* Score breakdown */}
       {(app.resume_score !== null || app.test_score !== null) && (
         <div className="flex flex-wrap gap-1.5 text-xs">
-          {app.resume_score !== null && (
-            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
-              Resume {app.resume_score.toFixed(0)}%
-            </span>
-          )}
-          {app.test_score !== null && (
-            <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-700">
-              Test {app.test_score.toFixed(0)}%
-            </span>
-          )}
-          {app.interview_score !== null && (
-            <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-700">
-              R1 {app.interview_score.toFixed(0)}%
-            </span>
-          )}
-          {app.hr_interview_score !== null && (
-            <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-700">
-              R2 {app.hr_interview_score.toFixed(0)}%
-            </span>
-          )}
+          {app.resume_score !== null && <span className="px-2 py-0.5 rounded-md bg-white/10 text-slate-300">Resume {app.resume_score.toFixed(0)}%</span>}
+          {app.test_score !== null && <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300">Test {app.test_score.toFixed(0)}%</span>}
+          {app.interview_score !== null && <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300">R1 {app.interview_score.toFixed(0)}%</span>}
+          {app.hr_interview_score !== null && <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300">R2 {app.hr_interview_score.toFixed(0)}%</span>}
         </div>
       )}
 
-      {/* Matched skills preview */}
       {app.matched_skills.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {app.matched_skills.slice(0, 3).map((s) => (
-            <span key={s} className="px-1.5 py-0.5 rounded text-xs bg-green-50 text-green-700 border border-green-200">{s}</span>
+            <span key={s} className="px-1.5 py-0.5 rounded text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">{s}</span>
           ))}
-          {app.matched_skills.length > 3 && (
-            <span className="text-xs text-gray-400">+{app.matched_skills.length - 3}</span>
-          )}
+          {app.matched_skills.length > 3 && <span className="text-xs text-slate-500">+{app.matched_skills.length - 3}</span>}
         </div>
       )}
 
-      {/* Action buttons */}
-      <div className="flex flex-wrap gap-1.5 pt-1 border-t border-gray-100">
+      <div className="flex flex-wrap gap-1.5 pt-1 border-t border-white/10">
         {app.stage === "applied" && (
           <button onClick={() => onAction("shortlist", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-50 border border-cyan-200 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/30">
             <CheckCircle2 className="h-3 w-3" /> Shortlist
           </button>
         )}
         {(app.stage === "applied" || app.stage === "shortlisted") && (
           <button onClick={() => onAction("test", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-700 hover:bg-blue-100">
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:bg-white/15">
             <Send className="h-3 w-3" /> Send test
           </button>
         )}
-        {app.stage === "test_sent" && (
+        {(app.stage === "test_sent" || app.stage === "tested") && (
           <button onClick={() => onAction("testscore", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-50 border border-sky-200 text-xs font-semibold text-sky-700 hover:bg-sky-100">
-            <Award className="h-3 w-3" /> Enter score
-          </button>
-        )}
-        {app.stage === "tested" && (
-          <button onClick={() => onAction("testscore", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-700 hover:bg-blue-100">
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:bg-white/15">
             <Award className="h-3 w-3" /> Enter score
           </button>
         )}
         {(app.stage === "applied" || app.stage === "shortlisted" || app.stage === "tested") && (
           <button onClick={() => onAction("interview1", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-xs font-semibold text-amber-700 hover:bg-amber-100">
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-xs font-semibold text-amber-300 hover:bg-amber-500/30">
             <Calendar className="h-3 w-3" /> Round 1
           </button>
         )}
         {app.stage === "interview_1" && (
           <button onClick={() => onAction("interview2", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-50 border border-purple-200 text-xs font-semibold text-purple-700 hover:bg-purple-100">
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-xs font-semibold text-purple-300 hover:bg-purple-500/30">
             <Calendar className="h-3 w-3" /> Round 2
           </button>
         )}
         {(app.stage === "interview_1" || app.stage === "interview_2") && (
           <button onClick={() => onAction("offer", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-50 border border-green-200 text-xs font-semibold text-green-700 hover:bg-green-100">
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30">
             <Award className="h-3 w-3" /> Offer
           </button>
         )}
         {app.stage !== "rejected" && app.stage !== "offered" && (
           <button onClick={() => onAction("reject", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 border border-red-200 text-xs font-semibold text-red-600 hover:bg-red-100">
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-xs font-semibold text-red-400 hover:bg-red-500/30">
             <XCircle className="h-3 w-3" /> Reject
           </button>
         )}
@@ -627,9 +568,9 @@ export default function Pipeline() {
     return (
       <Layout>
         <div className="max-w-md mx-auto text-center py-16">
-          <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-gray-900">No active job</h1>
-          <p className="mt-2 text-gray-500">Select a job from the sidebar to view its pipeline.</p>
+          <Users className="h-12 w-12 text-slate-500 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-white">No active job</h1>
+          <p className="mt-2 text-slate-400">Select a job from the sidebar to view its pipeline.</p>
         </div>
       </Layout>
     );
@@ -652,9 +593,7 @@ export default function Pipeline() {
           </div>
         </div>
 
-        {error && (
-          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-800">{error}</div>
-        )}
+        {error && <div className="p-4 rounded-xl bg-red-500/20 border border-red-500/30 text-sm text-red-300">{error}</div>}
 
         {/* Bulk action bar */}
         {selected.size > 0 && (
@@ -671,12 +610,12 @@ export default function Pipeline() {
               Reject all
             </button>
             <button onClick={() => setSelected(new Set())}
-              className="ml-auto text-xs text-blue-600 hover:underline font-medium">Clear</button>
+              className="ml-auto text-xs text-emerald-400 hover:underline font-medium">Clear</button>
           </div>
         )}
 
         {loading && applications.length === 0 ? (
-          <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 text-blue-600 animate-spin" /></div>
+          <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 text-emerald-400 animate-spin" /></div>
         ) : !loading && applications.length === 0 ? (
           <div className="glass rounded-2xl shadow-card p-10 text-center">
             <Users className="h-10 w-10 text-slate-500 mx-auto mb-4" />
@@ -692,25 +631,19 @@ export default function Pipeline() {
             {STAGES.map(({ key, label, color, bg }) => {
               const cards = byStage(key);
               return (
-                <div key={key} className={`rounded-2xl border border-gray-200 border-t-4 ${color} ${bg} overflow-hidden`}>
-                  <div className="px-3 py-3 flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">{label}</span>
-                    <span className="text-xs font-bold text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded-full">
+                <div key={key} className={`rounded-2xl border-t-4 ${color} glass overflow-hidden`}>
+                  <div className="px-3 py-3 flex items-center justify-between" style={{background:"rgba(255,255,255,0.04)"}}>
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wide">{label}</span>
+                    <span className="text-xs font-bold text-slate-400 bg-white/10 border border-white/10 px-2 py-0.5 rounded-full">
                       {cards.length}
                     </span>
                   </div>
                   <div className="px-2 pb-3 space-y-2 min-h-[120px]">
                     {cards.length === 0 ? (
-                      <p className="text-xs text-gray-400 text-center py-6">Empty</p>
+                      <p className="text-xs text-slate-600 text-center py-6">Empty</p>
                     ) : (
                       cards.map((app) => (
-                        <CandidateCard
-                          key={app.id}
-                          app={app}
-                          selected={selected.has(app.id)}
-                          onSelect={toggleSelect}
-                          onAction={handleAction}
-                        />
+                        <CandidateCard key={app.id} app={app} selected={selected.has(app.id)} onSelect={toggleSelect} onAction={handleAction} />
                       ))
                     )}
                   </div>
