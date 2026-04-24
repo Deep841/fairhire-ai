@@ -235,14 +235,27 @@ def extract_profile(text: str, raw_text: str = "") -> CandidateProfile:
     raw_text — uncleaned text, used for email/phone/name (avoids cleanup corruption)
     """
     contact_src = raw_text if raw_text.strip() else text
+    name  = _extract_name(contact_src)
+    email = _extract_email(contact_src)
+    phone = _extract_phone(contact_src)
+
+    # Upgrade 5 — structured log for debugging extraction quality
+    confidence = contact_confidence(email, phone, name)
+    log.info(
+        "[extract_profile] name=%r email=%r phone=%r confidence=%d",
+        name, email, phone, confidence
+    )
+    if confidence < 50:
+        log.warning("[extract_profile] low contact confidence (%d) — check raw text quality", confidence)
+
     return CandidateProfile(
         skills=_extract_skills(text),
         education=_extract_education(text),
         certifications=_extract_certifications(text),
         experience_years=_extract_experience_years(text),
-        full_name=_extract_name(contact_src),
-        email=_extract_email(contact_src),
-        phone=_extract_phone(contact_src),
+        full_name=name,
+        email=email,
+        phone=phone,
         raw_text=text,
     )
 
@@ -481,61 +494,83 @@ _CONTACT_SIGNAL = re.compile(
 
 
 def _contact_zone(text: str) -> str:
-    """
-    Return the most likely contact zone of the resume.
-    Strategy: first 25 lines, OR lines around the first email/phone signal.
-    This avoids picking up emails from job descriptions or references sections.
-    """
     lines = text.splitlines()
-    # Always include first 25 lines
     zone_lines = lines[:25]
-    # Also include any line with a contact signal in first 60 lines
     for line in lines[25:60]:
         if _CONTACT_SIGNAL.search(line):
             zone_lines.append(line)
     return "\n".join(zone_lines)
 
 
+def _normalize_contact_text(text: str) -> str:
+    """Upgrade 2 — fix spaced-out emails/phones common in PDFs: deep @ gmail . com"""
+    text = re.sub(r"([a-zA-Z0-9._%+\-])\s+@\s+", r"\1@", text)
+    text = re.sub(r"@\s+([a-zA-Z0-9])", r"@\1", text)
+    text = re.sub(r"([a-zA-Z0-9])\s+\.\s+([a-zA-Z]{2,})", r"\1.\2", text)
+    text = re.sub(r"(\d)\s*-\s*(\d{3})\s*-\s*(\d{4})", r"\1-\2-\3", text)
+    return text
+
+
 def _extract_email(text: str) -> str | None:
     """
-    Extract email — prefers contact zone, validates domain, rejects fakes.
-    Falls back to full text if not found in contact zone.
+    Upgrade 2+3+6 — normalize first, prefer non-edu/non-college emails,
+    fallback from contact zone to full text.
     """
     for search_text in [_contact_zone(text), text]:
-        for m in _EMAIL_RE.finditer(search_text):
+        normalized = _normalize_contact_text(search_text)
+        candidates: list[str] = []
+        for m in _EMAIL_RE.finditer(normalized):
             email = m.group(1).lower().strip(".")
-            # Reject if local part ends with a dot
             local = email.split("@")[0]
             if local.endswith(".") or local.startswith("."):
                 continue
             domain = email.split("@")[1] if "@" in email else ""
             if domain in _FAKE_DOMAINS:
                 continue
-            # Reject emails that look like they're inside a URL path
             pos = m.start()
-            preceding = search_text[max(0, pos-10):pos]
+            preceding = normalized[max(0, pos - 10):pos]
             if "/" in preceding or "://" in preceding:
                 continue
-            return email
+            candidates.append(email)
+        if candidates:
+            # Upgrade 3 — prefer non-edu, non-college domains
+            for email in candidates:
+                domain = email.split("@")[1]
+                if not any(domain.endswith(s) for s in (".edu", ".ac.in", ".edu.in")):
+                    return email
+            return candidates[0]  # fallback to first if all are edu
     return None
 
 
 def _extract_phone(text: str) -> str | None:
-    """
-    Extract phone — searches contact zone first, validates digit count.
-    """
+    """Upgrade 2+6 — normalize first, fallback from contact zone to full text."""
     for search_text in [_contact_zone(text), text]:
-        for m in _PHONE_RE.finditer(search_text):
+        normalized = _normalize_contact_text(search_text)
+        for m in _PHONE_RE.finditer(normalized):
             raw = m.group(1).strip()
             digits = sum(c.isdigit() for c in raw)
-            # Must have 10-15 digits (international numbers)
             if digits < 10 or digits > 15:
                 continue
-            # Reject if it looks like a year range (e.g. 2019-2023)
             if re.fullmatch(r"\d{4}[\s\-]\d{4}", raw.strip()):
                 continue
             return raw
     return None
+
+
+def contact_confidence(email: str | None, phone: str | None, name: str | None) -> int:
+    """Upgrade 4 — confidence score for contact extraction quality."""
+    score = 0
+    if email:
+        score += 40
+        # bonus for common personal domains
+        domain = email.split("@")[1] if "@" in email else ""
+        if any(domain.endswith(d) for d in ("gmail.com", "yahoo.com", "outlook.com", "hotmail.com")):
+            score += 10
+    if phone:
+        score += 40
+    if name:
+        score += 10
+    return min(score, 100)
 
 
 def _extract_name(text: str) -> str | None:

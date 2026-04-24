@@ -292,30 +292,38 @@ def _clean_pdf_text(raw: str) -> str:
     text = re.sub(r"(?<=[\s])-/\s*", " ", text)
 
     # Pass 3 — Restore missing spaces
-    # Guard: protect emails before applying space fixes
-    # temporarily mask emails so cleanup doesn't corrupt them
+    # Guard: protect emails AND phones before applying space fixes
     _email_placeholders: list[str] = []
-    def _mask_emails(t: str) -> str:
+    _phone_placeholders: list[str] = []
+
+    def _mask_contacts(t: str) -> str:
         import re as _re
         _simple_email = _re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
-        result = t
+        _simple_phone = _re.compile(r"\+?\d[\d\s\-().]{8,18}\d")
         for i, m in enumerate(_simple_email.finditer(t)):
-            placeholder = f"__EMAIL{i}__"
+            ph = f"__EMAIL{i}__"
             _email_placeholders.append(m.group(0))
-            result = result.replace(m.group(0), placeholder, 1)
-        return result
-    def _unmask_emails(t: str) -> str:
-        for i, email in enumerate(_email_placeholders):
-            t = t.replace(f"__EMAIL{i}__", email)
+            t = t.replace(m.group(0), ph, 1)
+        for i, m in enumerate(_simple_phone.finditer(t)):
+            ph = f"__PHONE{i}__"
+            _phone_placeholders.append(m.group(0))
+            t = t.replace(m.group(0), ph, 1)
         return t
 
-    text = _mask_emails(text)
+    def _unmask_contacts(t: str) -> str:
+        for i, val in enumerate(_email_placeholders):
+            t = t.replace(f"__EMAIL{i}__", val)
+        for i, val in enumerate(_phone_placeholders):
+            t = t.replace(f"__PHONE{i}__", val)
+        return t
+
+    text = _mask_contacts(text)
     text = _CAMEL_SPLIT.sub(r"\1 \2", text)
     text = _SPACE_BEFORE_PAREN.sub(r"\1 (", text)
     text = _SPACE_AFTER_PAREN.sub(r") \1", text)
     text = _SPACE_AFTER_COMMA.sub(r"\1 \2", text)
     text = _SPACE_AROUND_SLASH.sub(r"\1 / \2", text)
-    text = _unmask_emails(text)
+    text = _unmask_contacts(text)
 
     # ------------------------------------------------------------------
     # Pass 4 — Repair broken words split across lines by PDF layout

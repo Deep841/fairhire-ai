@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 from config import settings
 from services.parser import parse_resume
-from services.profile_extractor import CandidateProfile, extract_profile
+from services.profile_extractor import CandidateProfile, extract_profile, contact_confidence
 from services.link_verifier import verify_links, LinkResult
 from services.resume_quality import compute_resume_quality
 
@@ -48,6 +48,7 @@ class UploadResponse(BaseModel):
     verified_links: list[VerifiedLink] = []
     used_gemini_fallback: bool = False
     resume_quality: dict = {}
+    contact_confidence: int = 0
     message: str
 
 
@@ -94,16 +95,24 @@ async def upload_resume(file: UploadFile) -> UploadResponse:
         profile = extract_profile(parsed.full_text, parsed.raw_text_for_contacts)
         links   = await verify_links(parsed.full_text)
 
+    ps = _to_profile_summary(profile)
+    conf = contact_confidence(
+        ps.email if ps else None,
+        ps.phone if ps else None,
+        ps.full_name if ps else None,
+    ) if ps else 0
+
     return UploadResponse(
         filename=parsed.filename,
         size_bytes=parsed.size_bytes,
         detected_type=parsed.detected_type,
         full_text=parsed.full_text,
         extracted_text_preview=parsed.extracted_text_preview,
-        profile_summary=_to_profile_summary(profile),
+        profile_summary=ps,
         verified_links=[_to_verified_link(l) for l in links],
         used_gemini_fallback=parsed.used_gemini_fallback,
         resume_quality=compute_resume_quality(parsed.full_text) if parsed.full_text else {},
+        contact_confidence=conf,
         message="Resume parsed, profiled and links verified successfully.",
     )
 
