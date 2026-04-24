@@ -361,88 +361,91 @@ function CandidateCard({
   const score = app.final_score ?? app.resume_score;
 
   return (
-    <div className={`glass rounded-xl p-4 space-y-3 transition-all ${
-      selected ? "border-emerald-400/60 ring-1 ring-emerald-400/30" : ""
+    <div className={`glass rounded-xl p-3 space-y-2.5 transition-all ${
+      selected ? "ring-1 ring-emerald-400/50 border-emerald-400/40" : ""
     }`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <input type="checkbox" checked={selected} onChange={() => onSelect(app.id)}
-            className="h-3.5 w-3.5 rounded border-white/20 bg-white/10 text-emerald-500 flex-shrink-0 cursor-pointer"
-            onClick={(e) => e.stopPropagation()} />
-          <UserCircle className="h-7 w-7 text-slate-600 flex-shrink-0" />
-          <div className="min-w-0">
+      {/* Header: checkbox + avatar + name + score */}
+      <div className="flex items-start gap-2">
+        <input type="checkbox" checked={selected} onChange={() => onSelect(app.id)}
+          className="h-3.5 w-3.5 mt-0.5 rounded border-white/20 bg-white/10 text-emerald-500 flex-shrink-0 cursor-pointer"
+          onClick={(e) => e.stopPropagation()} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-1">
             <Link to={`/candidates/${app.candidate_id}`}
-              className="text-sm font-semibold text-emerald-400 hover:underline truncate block">
+              className="text-sm font-bold text-emerald-400 hover:underline leading-tight block">
               {app.candidate_name}
             </Link>
-            <p className="text-xs text-slate-500 truncate">{app.candidate_email}</p>
+            {score !== null && (
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${scoreColor(score)}`}>
+                {score.toFixed(0)}%
+              </span>
+            )}
           </div>
+          <p className="text-xs text-slate-400 mt-0.5 break-all leading-tight">{app.candidate_email}</p>
         </div>
-        {score !== null && (
-          <span className={`text-xs font-bold px-2 py-1 rounded-lg border flex-shrink-0 ${scoreColor(score)}`}>
-            {score.toFixed(0)}%
-          </span>
-        )}
       </div>
 
+      {/* Score breakdown */}
       {(app.resume_score !== null || app.test_score !== null) && (
-        <div className="flex flex-wrap gap-1.5 text-xs">
-          {app.resume_score !== null && <span className="px-2 py-0.5 rounded-md bg-white/10 text-slate-300">Resume {app.resume_score.toFixed(0)}%</span>}
-          {app.test_score !== null && <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300">Test {app.test_score.toFixed(0)}%</span>}
-          {app.interview_score !== null && <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300">R1 {app.interview_score.toFixed(0)}%</span>}
-          {app.hr_interview_score !== null && <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300">R2 {app.hr_interview_score.toFixed(0)}%</span>}
+        <div className="flex flex-wrap gap-1 text-xs">
+          {app.resume_score !== null && <span className="px-1.5 py-0.5 rounded bg-white/10 text-slate-300">R:{app.resume_score.toFixed(0)}%</span>}
+          {app.test_score !== null && <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">T:{app.test_score.toFixed(0)}%</span>}
+          {app.interview_score !== null && <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">I1:{app.interview_score.toFixed(0)}%</span>}
+          {app.hr_interview_score !== null && <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">I2:{app.hr_interview_score.toFixed(0)}%</span>}
         </div>
       )}
 
+      {/* Skills */}
       {app.matched_skills.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {app.matched_skills.slice(0, 3).map((s) => (
+          {app.matched_skills.slice(0, 4).map((s) => (
             <span key={s} className="px-1.5 py-0.5 rounded text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">{s}</span>
           ))}
-          {app.matched_skills.length > 3 && <span className="text-xs text-slate-500">+{app.matched_skills.length - 3}</span>}
+          {app.matched_skills.length > 4 && <span className="text-xs text-slate-500">+{app.matched_skills.length - 4}</span>}
         </div>
       )}
 
-      <div className="flex flex-wrap gap-1.5 pt-1 border-t border-white/10">
+      {/* Actions */}
+      <div className="flex flex-wrap gap-1 pt-1 border-t border-white/10">
         {app.stage === "applied" && (
           <button onClick={() => onAction("shortlist", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/30">
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/30">
             <CheckCircle2 className="h-3 w-3" /> Shortlist
           </button>
         )}
         {(app.stage === "applied" || app.stage === "shortlisted") && (
           <button onClick={() => onAction("test", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:bg-white/15">
-            <Send className="h-3 w-3" /> Send test
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:bg-white/15">
+            <Send className="h-3 w-3" /> Test
           </button>
         )}
         {(app.stage === "test_sent" || app.stage === "tested") && (
           <button onClick={() => onAction("testscore", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:bg-white/15">
-            <Award className="h-3 w-3" /> Enter score
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:bg-white/15">
+            <Award className="h-3 w-3" /> Score
           </button>
         )}
         {(app.stage === "applied" || app.stage === "shortlisted" || app.stage === "tested") && (
           <button onClick={() => onAction("interview1", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-xs font-semibold text-amber-300 hover:bg-amber-500/30">
-            <Calendar className="h-3 w-3" /> Round 1
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30 text-xs font-semibold text-amber-300 hover:bg-amber-500/30">
+            <Calendar className="h-3 w-3" /> R1
           </button>
         )}
         {app.stage === "interview_1" && (
           <button onClick={() => onAction("interview2", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-xs font-semibold text-purple-300 hover:bg-purple-500/30">
-            <Calendar className="h-3 w-3" /> Round 2
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 text-xs font-semibold text-purple-300 hover:bg-purple-500/30">
+            <Calendar className="h-3 w-3" /> R2
           </button>
         )}
         {(app.stage === "interview_1" || app.stage === "interview_2") && (
           <button onClick={() => onAction("offer", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30">
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30">
             <Award className="h-3 w-3" /> Offer
           </button>
         )}
         {app.stage !== "rejected" && app.stage !== "offered" && (
           <button onClick={() => onAction("reject", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-xs font-semibold text-red-400 hover:bg-red-500/30">
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-xs font-semibold text-red-400 hover:bg-red-500/30">
             <XCircle className="h-3 w-3" /> Reject
           </button>
         )}
@@ -626,21 +629,22 @@ export default function Pipeline() {
             </Link>
           </div>
         ) : (
-          /* Kanban board — sorted by score desc within each column */
-          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4 items-start">
-            {STAGES.map(({ key, label, color, bg }) => {
+          /* Kanban board — horizontal scroll with fixed column widths */
+          <div className="overflow-x-auto pb-4">
+            <div className="flex gap-4 items-start" style={{ minWidth: `${STAGES.length * 260}px` }}>
+            {STAGES.map(({ key, label, color }) => {
               const cards = byStage(key);
               return (
-                <div key={key} className={`rounded-2xl border-t-4 ${color} glass overflow-hidden`}>
-                  <div className="px-3 py-3 flex items-center justify-between" style={{background:"rgba(255,255,255,0.04)"}}>
+                <div key={key} className={`rounded-2xl border-t-4 ${color} glass overflow-hidden flex-shrink-0 w-60`}>
+                  <div className="px-4 py-3 flex items-center justify-between" style={{background:"rgba(255,255,255,0.04)"}}>
                     <span className="text-xs font-bold text-slate-300 uppercase tracking-wide">{label}</span>
                     <span className="text-xs font-bold text-slate-400 bg-white/10 border border-white/10 px-2 py-0.5 rounded-full">
                       {cards.length}
                     </span>
                   </div>
-                  <div className="px-2 pb-3 space-y-2 min-h-[120px]">
+                  <div className="px-3 pb-3 space-y-3 min-h-[140px]">
                     {cards.length === 0 ? (
-                      <p className="text-xs text-slate-600 text-center py-6">Empty</p>
+                      <p className="text-xs text-slate-600 text-center py-8">Empty</p>
                     ) : (
                       cards.map((app) => (
                         <CandidateCard key={app.id} app={app} selected={selected.has(app.id)} onSelect={toggleSelect} onAction={handleAction} />
@@ -650,6 +654,7 @@ export default function Pipeline() {
                 </div>
               );
             })}
+            </div>
           </div>
         )}
       </div>
