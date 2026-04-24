@@ -49,10 +49,18 @@ def _intent(msg: str) -> str:
         return "interview_questions"
     if re.search(r"job description|jd|write.*job|create.*job", m):
         return "job_description"
+    if re.search(r"analyze.*jd|check.*jd|is.*jd good|improve.*jd|jd.*good|jd.*bad|jd.*quality", m):
+        return "jd_analysis"
     if re.search(r"offer letter|offer.*draft|draft.*offer", m):
         return "offer_letter"
     if re.search(r"missing skill|skill gap|lacking|don.t have", m):
         return "skill_gaps"
+    if re.search(r"why.*reject|reason.*reject|reject.*reason", m):
+        return "why_rejected"
+    if re.search(r"improve.*resume|resume.*improve|fix.*resume|resume.*tips", m):
+        return "improve_resume"
+    if re.search(r"decision|should.*hire|hire.*decision|who.*hire", m):
+        return "hiring_decision"
     if re.search(r"interview|scheduled|upcoming|meeting", m):
         return "interviews"
     if re.search(r"reject|not a fit|low score|poor", m):
@@ -312,11 +320,13 @@ def _handle_greeting() -> str:
         "I can help you with:\n"
         "- 📊 **Top candidates** — ranked by score\n"
         "- 🔍 **Shortlist recommendations**\n"
+        "- ✅ **Hiring decisions** — Strong Hire / Hire / Hold / Reject\n"
         "- 📈 **Pipeline breakdown** by stage\n"
         "- ⚠️ **Skill gap analysis**\n"
+        "- ❓ **Why was a candidate rejected?**\n"
+        "- 📝 **Resume improvement tips**\n"
+        "- 🔎 **Analyze your JD** — type: *analyze jd: [paste JD]*\n"
         "- 📅 **Interview schedule**\n"
-        "- 📝 **Interview questions** for any role\n"
-        "- 📄 **Job description** templates\n"
         "- 💌 **Offer letter** drafts\n\n"
         "What would you like to know?"
     )
@@ -332,6 +342,92 @@ def _handle_general(msg: str) -> str:
         "- \"Write interview questions for a backend developer\"\n"
         "- \"Draft a job description for a data scientist\""
     )
+
+
+async def _handle_why_rejected(db: AsyncSession, job_id: str | None) -> str:
+    apps = await _get_apps(db, job_id)
+    rejected = [a for a in apps if a.stage == "rejected" or a.status == "rejected"]
+    if not rejected:
+        return "No rejected candidates found for this job."
+    lines = ["**Rejected Candidates & Reasons:**\n"]
+    for a in rejected[:5]:
+        name = await _get_candidate_name(db, a.candidate_id)
+        score = a.final_score or a.resume_score or 0
+        missing = ", ".join((a.missing_skills or [])[:3]) or "N/A"
+        lines.append(f"- **{name}** — Score: {score:.0f}% | Missing: {missing}")
+    return "\n".join(lines)
+
+
+async def _handle_improve_resume(db: AsyncSession, job_id: str | None) -> str:
+    apps = await _get_apps(db, job_id)
+    if not apps:
+        return "No candidates found. Upload resumes first."
+    from collections import Counter
+    all_missing: list[str] = []
+    for a in apps:
+        all_missing.extend(a.missing_skills or [])
+    top_gaps = Counter(all_missing).most_common(5)
+    lines = ["**Resume Improvement Tips for Candidates:**\n"]
+    lines.append("Based on current applications, candidates should add:")
+    for skill, count in top_gaps:
+        lines.append(f"- **{skill}** — missing in {count} resume(s)")
+    lines.append("\n**General Tips:**")
+    lines.append("- Add quantified achievements (e.g. 'Reduced load time by 40%')")
+    lines.append("- Include GitHub/LinkedIn profile links")
+    lines.append("- List projects with tech stack used")
+    lines.append("- Keep resume to 1-2 pages")
+    return "\n".join(lines)
+
+
+async def _handle_hiring_decision(db: AsyncSession, job_id: str | None) -> str:
+    from services.decision_engine import make_decision
+    apps = await _get_apps(db, job_id)
+    if not apps:
+        return "No applications found to make hiring decisions."
+    active = [a for a in apps if a.stage not in ("rejected", "offered")]
+    if not active:
+        return "All candidates are already in final stages (offered/rejected)."
+    lines = ["**Hiring Decisions:**\n"]
+    ranked = sorted(active, key=lambda a: a.final_score or a.resume_score or 0, reverse=True)[:8]
+    for a in ranked:
+        name = await _get_candidate_name(db, a.candidate_id)
+        d = make_decision(
+            fit_score=a.final_score or a.resume_score or 0,
+            matched_skills=a.matched_skills or [],
+            missing_skills=a.missing_skills or [],
+            test_score=a.test_score,
+            interview_score=a.interview_score,
+        )
+        emoji = {"Strong Hire": "✅", "Hire": "🟢", "Hold": "🟡", "Reject": "🔴"}.get(d.decision, "⚪")
+        lines.append(f"{emoji} **{name}** — {d.decision} | {d.next_action}")
+    return "\n".join(lines)
+
+
+def _handle_jd_analysis(msg: str) -> str:
+    # Extract JD text from message if provided after a colon or newline
+    jd_text = ""
+    if ":" in msg:
+        jd_text = msg.split(":", 1)[1].strip()
+    if len(jd_text) < 30:
+        return (
+            "To analyze your JD, paste it like this:\n\n"
+            "*analyze jd: [paste your full job description here]*\n\n"
+            "I'll check for: length, missing sections, vague language, skill coverage, and salary info."
+        )
+    from services.jd_optimizer import analyze_jd
+    result = analyze_jd(jd_text)
+    lines = [f"**JD Analysis — {result['label']} ({result['score']}/100)**\n"]
+    if result["issues"]:
+        lines.append("**Issues Found:**")
+        for issue in result["issues"]:
+            lines.append(f"- ⚠️ {issue}")
+    if result["suggestions"]:
+        lines.append("\n**Suggestions:**")
+        for s in result["suggestions"]:
+            lines.append(f"- 💡 {s}")
+    if result["skills_detected"]:
+        lines.append(f"\n**Skills Detected:** {', '.join(result['skills_detected'][:8])}")
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -356,6 +452,14 @@ async def chat(req: ChatRequest, db: AsyncSession = Depends(get_db)):
         reply = await _handle_interviews(db, req.job_id)
     elif intent == "rejections":
         reply = await _handle_rejections(db, req.job_id)
+    elif intent == "why_rejected":
+        reply = await _handle_why_rejected(db, req.job_id)
+    elif intent == "improve_resume":
+        reply = await _handle_improve_resume(db, req.job_id)
+    elif intent == "hiring_decision":
+        reply = await _handle_hiring_decision(db, req.job_id)
+    elif intent == "jd_analysis":
+        reply = _handle_jd_analysis(req.message)
     elif intent == "jobs_info":
         reply = await _handle_jobs(db)
     elif intent == "interview_questions":

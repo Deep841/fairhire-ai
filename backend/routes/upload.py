@@ -5,6 +5,7 @@ from config import settings
 from services.parser import parse_resume
 from services.profile_extractor import CandidateProfile, extract_profile
 from services.link_verifier import verify_links, LinkResult
+from services.resume_quality import compute_resume_quality
 
 router = APIRouter()
 
@@ -46,6 +47,7 @@ class UploadResponse(BaseModel):
     profile_summary: ProfileSummary | None = None
     verified_links: list[VerifiedLink] = []
     used_gemini_fallback: bool = False
+    resume_quality: dict = {}
     message: str
 
 
@@ -101,6 +103,7 @@ async def upload_resume(file: UploadFile) -> UploadResponse:
         profile_summary=_to_profile_summary(profile),
         verified_links=[_to_verified_link(l) for l in links],
         used_gemini_fallback=parsed.used_gemini_fallback,
+        resume_quality=compute_resume_quality(parsed.full_text) if parsed.full_text else {},
         message="Resume parsed, profiled and links verified successfully.",
     )
 
