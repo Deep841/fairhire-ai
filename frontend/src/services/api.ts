@@ -12,6 +12,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Auto-clear token and redirect to login on 401
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (axios.isAxiosError(err) && err.response?.status === 401) {
+      localStorage.removeItem("fairhire_token");
+      localStorage.removeItem("fairhire_user");
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  }
+);
+
 export const candidateService = {
   list: () => api.get<CandidateRecord[]>("/candidates/"),
   get: (id: string) => api.get<CandidateRecord>(`/candidates/${id}`),

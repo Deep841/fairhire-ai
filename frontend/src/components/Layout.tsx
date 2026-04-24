@@ -233,18 +233,18 @@ export default function Layout({ children }: LayoutProps) {
       {/* Mobile top bar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 glass border-b border-white/10 h-14 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMobileOpen((o) => !o)}
+            className="p-2 rounded-lg text-slate-400 hover:bg-white/10 mr-1"
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
           <div className="bg-emerald-500 rounded-lg p-1">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
           <span className="font-bold text-white">FairHire AI</span>
         </div>
-        <button
-          type="button"
-          onClick={() => setMobileOpen((o) => !o)}
-          className="p-2 rounded-lg text-slate-400 hover:bg-white/10"
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
       </div>
 
       {/* Mobile drawer */}
