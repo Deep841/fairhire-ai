@@ -43,21 +43,19 @@ export function JobProvider({ children }: { children: ReactNode }) {
       const { data } = await jobService.list();
       const fetched: Job[] = data;
       setJobs(fetched);
-      // Only auto-select when nothing is stored — never overwrite an explicit selection
       setActiveJobIdState((prev) => {
         if (prev && fetched.find((j) => j.id === prev)) return prev;
-        // stored id is stale or absent — pick first available
         const first = fetched[0]?.id ?? null;
         if (first) localStorage.setItem(STORAGE_KEY, first);
         else localStorage.removeItem(STORAGE_KEY);
         return first;
       });
     } catch {
-      // silently keep stale state; network may be down
+      // silently keep stale state
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) reloadJobs();
