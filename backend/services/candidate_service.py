@@ -15,10 +15,9 @@ async def get_or_create(
 ) -> tuple[Candidate, bool]:
     """
     Returns (candidate, created).
-    If a candidate with same email OR phone exists, updates their record.
-    Otherwise creates a new one.
+    Deduplicates by email (primary) or phone (secondary).
+    Updates existing record with latest resume text and name.
     """
-    # Build dedup query — match on email, or phone if provided
     conditions = [Candidate.email == email]
     if phone:
         conditions.append(Candidate.phone == phone)
@@ -29,7 +28,6 @@ async def get_or_create(
     existing = result.scalars().first()
 
     if existing:
-        # Update with latest info
         existing.full_name = full_name
         existing.resume_text = resume_text
         if phone:
@@ -38,7 +36,6 @@ async def get_or_create(
         await db.refresh(existing)
         return existing, False
 
-    # Create new
     candidate = Candidate(
         full_name=full_name,
         email=email,
@@ -58,16 +55,8 @@ async def create(
     resume_text: str | None,
     phone: str | None = None,
 ) -> Candidate:
-    """Legacy create — raises IntegrityError on duplicate email."""
-    candidate = Candidate(
-        full_name=full_name,
-        email=email,
-        phone=phone,
-        resume_text=resume_text,
-    )
-    db.add(candidate)
-    await db.commit()
-    await db.refresh(candidate)
+    """Upsert by email — never creates duplicates."""
+    candidate, _ = await get_or_create(db, full_name, email, resume_text, phone)
     return candidate
 
 

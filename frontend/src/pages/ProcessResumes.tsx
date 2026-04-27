@@ -137,18 +137,19 @@ export default function ProcessResumes() {
         }
         const profile = upload.profile_summary;
         const displayName = profile.full_name || displayNameFromFilename(upload.filename || file.name);
-        // Build a stable fallback email — use phone if available so dedup works across uploads
+        // Build a stable fallback email — deterministic from filename+size so same file always maps to same candidate
         const fallbackEmail = profile.phone
           ? `${profile.phone.replace(/\D/g, "")}@fairhire.local`
-          : `${makeCandidateId(file.name, i)}@fairhire.local`;
+          : `${file.name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30)}${file.size}@fairhire.local`;
         const email = profile.email || fallbackEmail;
         setCurrentStep(`Scoring ${displayName}…`);
         const { data: match } = await matchService.matchJd({ job_description: jobDescription.trim(), candidate_profile: { skills: profile.skills ?? [], education: profile.education ?? [], certifications: profile.certifications ?? [], experience_years: profile.experience_years ?? null, resume_text: upload.extracted_text_preview } });
         setCurrentStep(`Saving ${displayName}…`);
         let candidateId: string;
-        // Backend now upserts — no try/catch needed for duplicates
+        // Backend upserts by email — same resume always maps to same candidate
         const { data: c } = await candidateService.create({ full_name: displayName, email, phone: profile.phone ?? null, resume_text: upload.full_text || upload.extracted_text_preview || null });
         candidateId = c.id;
+        // application_service also upserts — re-uploading updates score, never duplicates
         await applicationService.create({ job_id: activeJob.id, candidate_id: candidateId, resume_score: match.fit_score, matched_skills: match.matched_skills, missing_skills: match.missing_skills });
         processed.push({ name: displayName, email, phone: profile.phone ?? null, fitScore: match.fit_score, matchedSkills: match.matched_skills, missingSkills: match.missing_skills, links: upload.verified_links ?? [], status: "saved" });
       } catch (e) {

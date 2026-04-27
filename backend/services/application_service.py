@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import select, cast, String
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Application
@@ -21,14 +21,11 @@ async def create(
     matched_skills: list[str] | None = None,
     missing_skills: list[str] | None = None,
 ) -> Application:
-    # SQLite stores UUIDs as 32-char hex without hyphens.
-    # Cast both sides to String and match against both formats to support SQLite + PostgreSQL.
-    job_id_hex = job_id.hex
-    cand_id_hex = candidate_id.hex
+    """Upsert — if application already exists for this candidate+job, update scores."""
     result = await db.execute(
         select(Application).where(
-            cast(Application.job_id, String).in_([str(job_id), job_id_hex]),
-            cast(Application.candidate_id, String).in_([str(candidate_id), cand_id_hex]),
+            Application.job_id == job_id,
+            Application.candidate_id == candidate_id,
         ).limit(1)
     )
     existing = result.scalars().first()
