@@ -15,13 +15,22 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
 
-    # SMTP email — set SMTP_ENABLED=true in .env once credentials are configured
+    # SMTP email — legacy, use RESEND_API_KEY instead
     SMTP_ENABLED: bool = False
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = ""
+
+    # Brevo (Sendinblue) — transactional email, sends to any address, no domain needed
+    BREVO_API_KEY: str = ""
+    BREVO_FROM_EMAIL: str = ""
+    BREVO_FROM_NAME: str = "FairHire AI"
+
+    # Resend — fallback
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "FairHire AI <onboarding@resend.dev>"
 
     # X (Twitter) API v2
     X_ENABLED: bool = False

@@ -56,6 +56,7 @@ export const applicationService = {
     api.get<{ draft: string; candidate_name: string; job_title: string }>(`/applications/${id}/offer-draft`),
   reject: (id: string) => api.post<ApplicationRecord>(`/applications/${id}/reject`),
   offer: (id: string, draft: string) => api.post<ApplicationRecord>(`/applications/${id}/offer`, { draft }),
+  delete: (id: string) => api.delete(`/applications/${id}`),
 };
 
 export const interviewService = {
@@ -128,6 +129,8 @@ export interface ApplicationRecord {
   applied_at: string;
   resume_weight: number;
   test_weight: number;
+  email_sent?: boolean;
+  email_status?: string;
 }
 
 export interface InterviewRecord {
@@ -136,7 +139,7 @@ export interface InterviewRecord {
   job_id: string;
   application_id: string | null;
   round_number: number;
-  interviewer_id: string | null;
+  interviewer_name: string | null;
   status: string;
   scheduled_at: string | null;
   meet_link: string | null;

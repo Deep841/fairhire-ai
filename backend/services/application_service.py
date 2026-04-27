@@ -7,10 +7,30 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import select
+from sqlalchemy import select, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Application
+
+
+def _hex(u: uuid.UUID) -> str:
+    """32-char hex — how SQLite stores UUID(as_uuid=True)."""
+    return u.hex
+
+
+async def _find_existing(
+    db: AsyncSession,
+    job_id: uuid.UUID,
+    candidate_id: uuid.UUID,
+) -> Application | None:
+    """Works on both SQLite (hex) and PostgreSQL (hyphenated) UUID storage."""
+    result = await db.execute(
+        select(Application).where(
+            cast(Application.job_id, String).in_([str(job_id), _hex(job_id)]),
+            cast(Application.candidate_id, String).in_([str(candidate_id), _hex(candidate_id)]),
+        ).limit(1)
+    )
+    return result.scalars().first()
 
 
 async def create(
@@ -21,19 +41,19 @@ async def create(
     matched_skills: list[str] | None = None,
     missing_skills: list[str] | None = None,
 ) -> Application:
-    """Upsert — if application already exists for this candidate+job, update scores."""
-    result = await db.execute(
-        select(Application).where(
-            Application.job_id == job_id,
-            Application.candidate_id == candidate_id,
-        ).limit(1)
-    )
-    existing = result.scalars().first()
+    """
+    Upsert — if application already exists for this (candidate, job),
+    update scores + skills only.
+    Stage and status are NEVER touched so a candidate already in
+    Shortlisted / Testing / Interviewing stays exactly where they are.
+    """
+    existing = await _find_existing(db, job_id, candidate_id)
     if existing:
         existing.resume_score = resume_score
-        existing.final_score = resume_score
         existing.matched_skills = matched_skills or []
         existing.missing_skills = missing_skills or []
+        # Recompute final preserving any test/interview scores already recorded
+        existing.final_score = _compute_final(existing)
         existing.updated_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(existing)
@@ -51,6 +71,11 @@ async def create(
     await db.commit()
     await db.refresh(app)
     return app
+
+
+async def delete(db: AsyncSession, app: Application) -> None:
+    await db.delete(app)
+    await db.commit()
 
 
 async def get_by_id(db: AsyncSession, app_id: uuid.UUID) -> Application | None:

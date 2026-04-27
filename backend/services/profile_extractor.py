@@ -509,29 +509,40 @@ def _contact_zone(text: str) -> str:
 
 def _normalize_contact_text(text: str) -> str:
     """
-    Comprehensive normalization for contact zone text.
-    Handles all common PDF extraction artifacts.
+    Normalize contact zone text:
+    - Strip emoji/symbol prefixes before emails and phones
+    - Fix spaced @ and dots
+    - Handle [at] / (at) obfuscation
+    - Normalize brackets/pipes around emails
+    - Add https:// to bare links
     """
-    # Fix spaced-out emails: d e e p @ g m a i l . c o m
-    # Step 1: collapse single-char sequences around @
-    text = re.sub(r"(?<=[a-zA-Z0-9])\s(?=[a-zA-Z0-9])(?=.*@)", "", text)
+    # Strip common emoji/unicode symbols used as contact icons
+    # Covers: ✉✉️📧📨📱📞☎️☏📍🔗👤👥•‣◦⁃∙·–—|│
+    text = re.sub(
+        r"[\u2709\u2709\U0001f4e7\U0001f4e8\U0001f4f1\U0001f4de"
+        r"\u260e\u260f\U0001f4cd\U0001f517\U0001f464\U0001f465"
+        r"\u2022\u2023\u25e6\u2043\u2219\u00b7\u2013\u2014"
+        r"\u2502\u2503|\*#>]+\s*",
+        " ", text
+    )
 
-    # Fix: deep @ gmail . com  or  deep@gmail . com
-    text = re.sub(r"([a-zA-Z0-9._%+\-])\s+@\s*", r"\1@", text)
-    text = re.sub(r"@\s+([a-zA-Z0-9])", r"@\1", text)
+    # Remove brackets/parens wrapping emails: [email] (email)
+    text = re.sub(r"[\[\(]([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})[\]\)]", r"\1", text)
 
-    # Fix dots in domain: gmail . com -> gmail.com
-    text = re.sub(r"([a-zA-Z0-9])\s+\.\s+([a-zA-Z]{2,6})\b", r"\1.\2", text)
+    # Fix spaced @: deep @ gmail.com or deep @gmail.com
+    text = re.sub(r"([a-zA-Z0-9._%+\-])\s+@\s*([a-zA-Z0-9])", r"\1@\2", text)
+    text = re.sub(r"([a-zA-Z0-9._%+\-])@\s+([a-zA-Z0-9])", r"\1@\2", text)
 
-    # Fix [at] obfuscation: name[at]gmail.com or name (at) gmail.com
-    text = re.sub(r"\s*[\[(]\s*at\s*[\])]\s*", "@", text, flags=re.IGNORECASE)
-    text = re.sub(r"\s+at\s+(?=[a-zA-Z0-9]+\.)", "@", text, flags=re.IGNORECASE)
+    # Fix spaced dots in domain: gmail . com -> gmail.com
+    text = re.sub(r"([a-zA-Z0-9])\s\.\s([a-zA-Z]{2,6})(?=\s|$|[|,;])", r"\1.\2", text)
 
-    # Fix [dot] obfuscation: gmail[dot]com
-    text = re.sub(r"\s*[\[(]\s*dot\s*[\])]\s*", ".", text, flags=re.IGNORECASE)
+    # Fix [at] / (at) / {at} obfuscation
+    text = re.sub(r"\s*[\[\(\{]\s*at\s*[\]\)\}]\s*", "@", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*[\[\(\{]\s*dot\s*[\]\)\}]\s*", ".", text, flags=re.IGNORECASE)
 
-    # Fix phone separators: +91-78142-92589 or +91 78142 92589
-    text = re.sub(r"(\+?\d{1,3})[-\s](\d{3,5})[-\s](\d{4,5})", r"\1\2\3", text)
+    # Add https:// to bare linkedin/github links so link_verifier picks them up
+    text = re.sub(r"(?<![/\w])(linkedin\.com/[\w/\-]+)", r"https://\1", text, flags=re.IGNORECASE)
+    text = re.sub(r"(?<![/\w])(github\.com/[\w/\-]+)", r"https://\1", text, flags=re.IGNORECASE)
 
     # Remove zero-width and non-breaking spaces
     text = text.replace("\u200b", "").replace("\u00a0", " ").replace("\ufeff", "")
@@ -600,7 +611,7 @@ def _extract_email(text: str) -> str | None:
 
 
 def _extract_phone(text: str) -> str | None:
-    """Upgrade 2+6 — normalize first, fallback from contact zone to full text."""
+    """Extract phone — strips emoji/symbol prefixes, normalizes, fallback from contact zone to full text."""
     for search_text in [_contact_zone(text), text]:
         normalized = _normalize_contact_text(search_text)
         for m in _PHONE_RE.finditer(normalized):
@@ -608,6 +619,7 @@ def _extract_phone(text: str) -> str | None:
             digits = sum(c.isdigit() for c in raw)
             if digits < 10 or digits > 15:
                 continue
+            # Reject 8-digit year-like patterns
             if re.fullmatch(r"\d{4}[\s\-]\d{4}", raw.strip()):
                 continue
             return raw
@@ -644,6 +656,14 @@ def _extract_name(text: str) -> str | None:
         line = line.strip()
         if not line or len(line) > 120:
             continue
+
+        # Strip leading emoji/symbols/bullets that PDFs often put before names
+        line = re.sub(
+            r"^[\u2022\u2023\u25e6\u2043\u2219\u00b7\u2013\u2014\u2709"
+            r"\U0001f4e7\U0001f4f1\U0001f4de\u260e\u260f\U0001f464"
+            r"|\*#>\-=~]+\s*",
+            "", line
+        ).strip()
 
         # If line contains an email, strip everything from @ onwards and try the remainder
         if "@" in line:

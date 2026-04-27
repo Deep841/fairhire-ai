@@ -82,7 +82,7 @@ class Interview(Base):
     job_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     application_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("applications.id"), nullable=True)
     round_number: Mapped[int] = mapped_column(Integer, default=1)
-    interviewer_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("hr_users.id"), nullable=True)
+    interviewer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="scheduled")
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     meet_link: Mapped[str | None] = mapped_column(String(500))

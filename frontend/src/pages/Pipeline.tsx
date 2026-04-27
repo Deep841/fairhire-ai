@@ -1,13 +1,38 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Users, Loader2, UserCircle, Send, Calendar,
-  XCircle, Award, RefreshCw, Edit3, CheckCircle2, ArrowRight,
+  XCircle, Award, RefreshCw, Edit3, CheckCircle2, ArrowRight, Mail, MailX, MailCheck, Trash2,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import { Link } from "react-router-dom";
 import { applicationService, interviewService, type ApplicationRecord } from "../services/api";
 import { useJobs } from "../context/JobContext";
 import { getApiErrorMessage } from "../utils/apiError";
+
+// ── Toast notification ────────────────────────────────────────────────────────
+
+interface Toast { id: number; message: string; type: "success" | "error" | "info"; }
+
+function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: number) => void }) {
+  return (
+    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
+      {toasts.map((t) => (
+        <div key={t.id}
+          className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold animate-fade-in ${
+            t.type === "success" ? "bg-emerald-600 text-white" :
+            t.type === "error"   ? "bg-red-600 text-white" :
+                                   "bg-slate-700 text-white"
+          }`}>
+          {t.type === "success" ? <MailCheck className="h-4 w-4 flex-shrink-0" /> :
+           t.type === "error"   ? <MailX className="h-4 w-4 flex-shrink-0" /> :
+                                  <Mail className="h-4 w-4 flex-shrink-0" />}
+          {t.message}
+          <button onClick={() => onDismiss(t.id)} className="ml-2 opacity-70 hover:opacity-100"><XCircle className="h-3.5 w-3.5" /></button>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ── Offer draft modal ────────────────────────────────────────────────────────
 
@@ -266,11 +291,6 @@ function ScheduleModal({
   const [error, setError] = useState<string | null>(null);
 
   const handleSchedule = async () => {
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (interviewerId && !UUID_RE.test(interviewerId.trim())) {
-      setError("Interviewer ID must be a valid UUID (e.g. from the HR Users list).");
-      return;
-    }
     setSaving(true);
     setError(null);
     try {
@@ -312,9 +332,9 @@ function ScheduleModal({
           </div>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-1.5">Interviewer ID (optional)</label>
+          <label className="block text-sm font-semibold text-slate-300 mb-1.5">Interviewer Name (optional)</label>
           <input type="text" value={interviewerId} onChange={(e) => setInterviewerId(e.target.value)}
-            placeholder="Paste interviewer UUID"
+            placeholder="e.g. John Smith"
             className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-500" />
         </div>
         <div>
@@ -353,7 +373,7 @@ function CandidateCard({
   app: ApplicationRecord;
   selected: boolean;
   onSelect: (id: string) => void;
-  onAction: (action: "shortlist" | "test" | "testscore" | "interview" | "reject" | "offer", app: ApplicationRecord) => void;
+  onAction: (action: "shortlist" | "test" | "testscore" | "interview" | "reject" | "offer" | "delete", app: ApplicationRecord) => void;
 }) {
   const score = app.final_score ?? app.resume_score;
 
@@ -435,6 +455,10 @@ function CandidateCard({
               <XCircle className="h-3 w-3" /> Reject
             </button>
           )}
+          <button onClick={() => onAction("delete", app)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-semibold text-slate-500 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30">
+            <Trash2 className="h-3 w-3" /> Delete
+          </button>
         </div>
       </td>
     </tr>
@@ -457,6 +481,21 @@ export default function Pipeline() {
   const [offerModal, setOfferModal] = useState<ApplicationRecord | null>(null);
   const [rejectModal, setRejectModal] = useState<ApplicationRecord | null>(null);
   const [rejectLoading, setRejectLoading] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const addToast = (message: string, type: Toast["type"]) => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+  };
+
+  const dismissToast = (id: number) => setToasts((prev) => prev.filter((t) => t.id !== id));
+
+  const showEmailToast = (data: ApplicationRecord, actionLabel: string) => {
+    if (data.email_status === "sent") addToast(`✓ ${actionLabel} email sent to ${data.candidate_email}`, "success");
+    else if (data.email_status === "disabled") addToast(`${actionLabel} saved. Email not sent — SMTP is disabled in .env`, "info");
+    else if (data.email_status === "failed") addToast(`${actionLabel} saved but email failed to send`, "error");
+  };
 
   const isRealDbRecord = (app: ApplicationRecord) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(app.id);
@@ -478,7 +517,7 @@ export default function Pipeline() {
   useEffect(() => { load(); }, [load]);
 
   const handleAction = async (
-    action: "shortlist" | "test" | "testscore" | "interview" | "reject" | "offer",
+    action: "shortlist" | "test" | "testscore" | "interview" | "reject" | "offer" | "delete",
     app: ApplicationRecord,
   ) => {
     if (action === "shortlist") {
@@ -486,6 +525,7 @@ export default function Pipeline() {
       try {
         const { data } = await applicationService.shortlist(app.id);
         setApplications((prev) => prev.map((a) => a.id === data.id ? data : a));
+        addToast(`${app.candidate_name} moved to Shortlisted`, "success");
       } catch (e) { setError(getApiErrorMessage(e, "Action failed")); }
       return;
     }
@@ -494,6 +534,15 @@ export default function Pipeline() {
     if (action === "interview") { setScheduleModal(app); return; }
     if (action === "offer") { setOfferModal(app); return; }
     if (action === "reject") { setRejectModal(app); return; }
+    if (action === "delete") {
+      if (!window.confirm(`Remove ${app.candidate_name} from this pipeline? This cannot be undone.`)) return;
+      try {
+        await applicationService.delete(app.id);
+        setApplications((prev) => prev.filter((a) => a.id !== app.id));
+        addToast(`${app.candidate_name} removed from pipeline`, "info");
+      } catch (e) { setError(getApiErrorMessage(e, "Delete failed")); }
+      return;
+    }
   };
 
   const confirmReject = async () => {
@@ -506,7 +555,9 @@ export default function Pipeline() {
     setRejectLoading(true);
     setApplications((prev) => prev.map((a) => a.id === rejectModal.id ? { ...a, stage: "rejected" } : a));
     try {
-      await applicationService.reject(rejectModal.id);
+      const { data } = await applicationService.reject(rejectModal.id);
+      setApplications((prev) => prev.map((a) => a.id === data.id ? data : a));
+      showEmailToast(data, "Rejection");
     } catch (e) {
       setError(getApiErrorMessage(e, "Action failed"));
       setApplications((prev) => prev.map((a) => a.id === rejectModal.id ? { ...a, stage: rejectModal.stage } : a));
@@ -546,6 +597,21 @@ export default function Pipeline() {
     );
     setSelected(new Set());
     setBulkLoading(false);
+  };
+
+  const bulkDelete = async () => {
+    if (!window.confirm(`Permanently remove ${selectedApps.length} candidate(s) from this pipeline?`)) return;
+    setBulkLoading(true);
+    await Promise.allSettled(
+      selectedApps.filter(isRealDbRecord).map((a) =>
+        applicationService.delete(a.id).then(() =>
+          setApplications((prev) => prev.filter((x) => x.id !== a.id))
+        )
+      )
+    );
+    setSelected(new Set());
+    setBulkLoading(false);
+    addToast(`${selectedApps.length} application(s) removed`, "info");
   };
 
   const byStage = (stage: Stage) =>
@@ -597,6 +663,11 @@ export default function Pipeline() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-50">
               {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
               Reject all
+            </button>
+            <button onClick={bulkDelete} disabled={bulkLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs font-semibold hover:bg-slate-600 disabled:opacity-50">
+              {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              Delete all
             </button>
             <button onClick={() => setSelected(new Set())}
               className="ml-auto text-xs text-emerald-400 hover:underline font-medium">Clear</button>
@@ -684,6 +755,7 @@ export default function Pipeline() {
           onClose={() => setTestModal(null)}
           onSent={(updated) => {
             setApplications((prev) => prev.map((a) => a.id === updated.id ? updated : a));
+            showEmailToast(updated, "Test link");
             setTestModal(null);
           }}
         />
@@ -707,6 +779,7 @@ export default function Pipeline() {
           onClose={() => setOfferModal(null)}
           onSent={(updatedApp) => {
             setApplications((prev) => prev.map((a) => a.id === updatedApp.id ? updatedApp : a));
+            showEmailToast(updatedApp, "Offer letter");
             setOfferModal(null);
           }}
         />
@@ -720,6 +793,8 @@ export default function Pipeline() {
           onClose={() => setRejectModal(null)}
         />
       )}
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </Layout>
   );
 }

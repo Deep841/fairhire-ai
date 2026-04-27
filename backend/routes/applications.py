@@ -12,7 +12,7 @@ POST   /api/v1/applications/{id}/offer       — make offer + send email
 from __future__ import annotations
 
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,6 +23,7 @@ from services.auth_service import get_current_user
 from services.notification_service import send_rejection, send_offer, send_test_link
 from services.offer_service import draft_offer_email
 from db.models import HRUser
+from config import settings
 
 router = APIRouter()
 
@@ -50,6 +51,8 @@ class ApplicationOut(BaseModel):
     applied_at: str
     resume_weight: int
     test_weight: int
+    email_sent: bool = False
+    email_status: str = ""  # "sent" | "failed" | "disabled" | ""
 
 
 class CreateApplicationIn(BaseModel):
@@ -92,7 +95,7 @@ class SendOfferIn(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
-async def _enrich(db: AsyncSession, app: Application) -> ApplicationOut:
+async def _enrich(db: AsyncSession, app: Application, email_sent: bool = False, email_status: str = "") -> ApplicationOut:
     candidate: Candidate | None = await db.get(Candidate, app.candidate_id)
     return ApplicationOut(
         id=str(app.id),
@@ -113,6 +116,8 @@ async def _enrich(db: AsyncSession, app: Application) -> ApplicationOut:
         applied_at=app.applied_at.isoformat(),
         resume_weight=app.resume_weight,
         test_weight=app.test_weight,
+        email_sent=email_sent,
+        email_status=email_status,
     )
 
 
@@ -226,12 +231,13 @@ async def reject_application(
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
     app = await application_service.update_stage(db, app, "rejected", status="rejected")
-    # Fire rejection email
     candidate: Candidate | None = await db.get(Candidate, app.candidate_id)
     job: Job | None = await db.get(Job, app.job_id)
+    email_sent = False
     if candidate and job:
-        await send_rejection(candidate.email, candidate.full_name, job.title)
-    return await _enrich(db, app)
+        email_sent = await send_rejection(candidate.email, candidate.full_name, job.title)
+    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "failed")
+    return await _enrich(db, app, email_sent=email_sent, email_status=status)
 
 
 @router.post("/{app_id}/offer", response_model=ApplicationOut)
@@ -247,9 +253,11 @@ async def make_offer(
     app = await application_service.update_stage(db, app, "offered", status="offered")
     candidate: Candidate | None = await db.get(Candidate, app.candidate_id)
     job: Job | None = await db.get(Job, app.job_id)
+    email_sent = False
     if candidate and job:
-        await send_offer(candidate.email, candidate.full_name, job.title, body.draft)
-    return await _enrich(db, app)
+        email_sent = await send_offer(candidate.email, candidate.full_name, job.title, body.draft)
+    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "failed")
+    return await _enrich(db, app, email_sent=email_sent, email_status=status)
 
 
 @router.post("/{app_id}/send-test-link", response_model=ApplicationOut)
@@ -264,8 +272,9 @@ async def send_test_link_route(
         raise HTTPException(status_code=404, detail="Application not found")
     candidate: Candidate | None = await db.get(Candidate, app.candidate_id)
     job: Job | None = await db.get(Job, app.job_id)
+    email_sent = False
     if candidate and job:
-        await send_test_link(
+        email_sent = await send_test_link(
             candidate_email=candidate.email,
             candidate_name=candidate.full_name,
             job_title=job.title,
@@ -273,7 +282,21 @@ async def send_test_link_route(
             deadline=body.deadline,
         )
     app = await application_service.update_stage(db, app, "testing")
-    return await _enrich(db, app)
+    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "failed")
+    return await _enrich(db, app, email_sent=email_sent, email_status=status)
+
+
+@router.delete("/{app_id}", status_code=204)
+async def delete_application(
+    app_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: HRUser = Depends(get_current_user),
+) -> Response:
+    app = await application_service.get_by_id(db, app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    await application_service.delete(db, app)
+    return Response(status_code=204)
 
 
 @router.patch("/{app_id}/weights", response_model=ApplicationOut)

@@ -25,11 +25,11 @@ router = APIRouter()
 
 
 class InterviewIn(BaseModel):
-    candidate_id: uuid.UUID
-    job_id: uuid.UUID
-    application_id: uuid.UUID | None = None
+    candidate_id: str
+    job_id: str
+    application_id: str | None = None
     round_number: int = 1
-    interviewer_id: uuid.UUID | None = None
+    interviewer_id: str | None = None
     status: str = "scheduled"
     scheduled_at: datetime | None = None
     meet_link: str | None = None
@@ -37,12 +37,12 @@ class InterviewIn(BaseModel):
 
 
 class InterviewOut(BaseModel):
-    id: uuid.UUID
-    candidate_id: uuid.UUID
-    job_id: uuid.UUID
-    application_id: uuid.UUID | None
+    id: str
+    candidate_id: str
+    job_id: str
+    application_id: str | None
     round_number: int
-    interviewer_id: uuid.UUID | None
+    interviewer_name: str | None
     status: str
     scheduled_at: datetime | None
     meet_link: str | None
@@ -74,15 +74,20 @@ async def create_interview(
         job_id=body.job_id,
         application_id=body.application_id,
         round_number=body.round_number,
-        interviewer_id=body.interviewer_id,
+        interviewer_name=body.interviewer_id,
         status=body.status,
         scheduled_at=body.scheduled_at,
         meet_link=body.meet_link,
         notes=body.notes,
     )
 
-    candidate: Candidate | None = await db.get(Candidate, body.candidate_id)
-    job: Job | None = await db.get(Job, body.job_id)
+    import uuid as _uuid
+    try:
+        candidate: Candidate | None = await db.get(Candidate, _uuid.UUID(body.candidate_id))
+        job: Job | None = await db.get(Job, _uuid.UUID(body.job_id))
+    except Exception:
+        candidate = None
+        job = None
     if candidate and job and body.scheduled_at:
         # Email candidate
         await send_interview_confirmation(
@@ -94,23 +99,18 @@ async def create_interview(
             meet_link=body.meet_link,
             notes=body.notes,
         )
-        # Email interviewer if assigned
-        if body.interviewer_id:
-            from sqlalchemy import select as _select
-            from db.models import HRUser
-            res = await db.execute(_select(HRUser).where(HRUser.id == body.interviewer_id))
-            interviewer: HRUser | None = res.scalar_one_or_none()
-            if interviewer:
-                await send_interviewer_notification(
-                    interviewer_email=interviewer.email,
-                    interviewer_name=interviewer.full_name,
-                    candidate_name=candidate.full_name,
-                    job_title=job.title,
-                    interview_date=body.scheduled_at.strftime("%B %d, %Y"),
-                    interview_time=body.scheduled_at.strftime("%I:%M %p"),
-                    meet_link=body.meet_link,
-                    notes=body.notes,
-                )
+        # Email interviewer if assigned (interviewer_id is now a name string)
+        if body.interviewer_id and body.interviewer_id.strip():
+            await send_interviewer_notification(
+                interviewer_email=candidate.email,  # notify via candidate email in demo
+                interviewer_name=body.interviewer_id,
+                candidate_name=candidate.full_name,
+                job_title=job.title,
+                interview_date=body.scheduled_at.strftime("%B %d, %Y"),
+                interview_time=body.scheduled_at.strftime("%I:%M %p"),
+                meet_link=body.meet_link,
+                notes=body.notes,
+            )
 
     return interview
 
