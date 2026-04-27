@@ -20,22 +20,20 @@ function scoreColor(s: number) {
 
 function stageBadge(stage: string) {
   const map: Record<string, string> = {
-    applied: "bg-slate-100 text-slate-700",
-    shortlisted: "bg-cyan-100 text-cyan-800",
-    test_sent: "bg-sky-100 text-sky-800",
-    tested: "bg-blue-100 text-blue-800",
-    interview_1: "bg-amber-100 text-amber-800",
-    interview_2: "bg-purple-100 text-purple-800",
-    offered: "bg-green-100 text-green-800",
-    rejected: "bg-red-100 text-red-700",
+    applied:      "bg-slate-100 text-slate-700",
+    shortlisted:  "bg-cyan-100 text-cyan-800",
+    testing:      "bg-sky-100 text-sky-800",
+    interviewing: "bg-amber-100 text-amber-800",
+    offered:      "bg-green-100 text-green-800",
+    rejected:     "bg-red-100 text-red-700",
   };
   return map[stage] ?? "bg-gray-100 text-gray-700";
 }
 
 function stageLabel(stage: string) {
   const map: Record<string, string> = {
-    applied: "Applied", shortlisted: "Shortlisted", test_sent: "Test Sent", tested: "Assessment",
-    interview_1: "Round 1", interview_2: "Round 2", offered: "Offered", rejected: "Rejected",
+    applied: "Applied", shortlisted: "Shortlisted", testing: "Testing",
+    interviewing: "Interviewing", offered: "Offered", rejected: "Rejected",
   };
   return map[stage] ?? stage;
 }
@@ -136,8 +134,8 @@ export default function Dashboard() {
     .sort((a, b) => (b.final_score ?? b.resume_score ?? 0) - (a.final_score ?? a.resume_score ?? 0))
     .slice(0, 5);
 
-  // Stage funnel counts
-  const stageCounts = ["applied", "shortlisted", "test_sent", "tested", "interview_1", "interview_2", "offered"].map((s) => ({
+  // Stage counts — 6-stage pipeline including rejected
+  const stageCounts = ["applied", "shortlisted", "testing", "interviewing", "offered", "rejected"].map((s) => ({
     stage: s,
     count: applications.filter((a) => a.stage === s).length,
   }));
@@ -240,11 +238,11 @@ export default function Dashboard() {
               {/* Right column */}
               <div className="space-y-6">
 
-                {/* Pipeline Funnel */}
+                {/* All Stages */}
                 <div className="glass rounded-2xl shadow-card overflow-hidden">
                   <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-white">Pipeline Funnel</h2>
-                    <Link to="/pipeline" className="text-xs font-semibold text-emerald-400 hover:underline">Open →</Link>
+                    <h2 className="text-sm font-bold text-white">All Stages</h2>
+                    <Link to="/pipeline" className="text-xs font-semibold text-emerald-400 hover:underline flex items-center gap-1">Pipeline <ArrowRight className="h-3 w-3" /></Link>
                   </div>
                   <div className="p-4 space-y-2">
                     {stageCounts.map(({ stage, count }) => (

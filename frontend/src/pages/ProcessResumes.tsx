@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowRight, FileText, Loader2, UploadCloud, X, Briefcase, CheckCircle2, AlertCircle } from "lucide-react";
+import { ArrowRight, FileText, Loader2, UploadCloud, X, Briefcase, CheckCircle2, AlertCircle, RefreshCw, FileUp, PenLine } from "lucide-react";
+import mammoth from "mammoth";
 import Layout from "../components/Layout";
 import { useJobs } from "../context/JobContext";
 import { uploadService, matchService, applicationService, candidateService } from "../services/api";
@@ -24,8 +25,13 @@ export default function ProcessResumes() {
   const { activeJob, jobs } = useJobs();
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const jdFileInputRef = useRef<HTMLInputElement>(null);
 
   const [jobDescription, setJobDescription] = useState("");
+  const [jdMode, setJdMode] = useState<"type" | "upload">("type");
+  const [jdSource, setJdSource] = useState<"auto" | "manual" | "file">("auto");
+  const [jdFileName, setJdFileName] = useState<string | null>(null);
+  const [isDraggingJd, setIsDraggingJd] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -35,9 +41,68 @@ export default function ProcessResumes() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Auto-fill JD from active job — always sync when job changes or on first mount
   useEffect(() => {
-    if (activeJob?.description) setJobDescription(activeJob.description);
+    if (activeJob?.description) {
+      setJobDescription(activeJob.description);
+      setJdSource("auto");
+      setJdMode("type");
+      setJdFileName(null);
+    } else {
+      setJobDescription("");
+      setJdSource("manual");
+    }
   }, [activeJob?.id]); // eslint-disable-line
+
+  // Read JD file content entirely in the browser — no backend call needed
+  const readJdFile = useCallback(async (file: File) => {
+    setJdFileName(file.name);
+    setJdSource("file");
+    setError(null);
+
+    const isDocx = file.name.toLowerCase().endsWith(".docx") ||
+      file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
+
+    if (isDocx) {
+      // mammoth extracts clean text from DOCX binary in the browser
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        setJobDescription(result.value.slice(0, 8000));
+      } catch {
+        setError("Could not read DOCX. Try copy-pasting the text instead.");
+        setJdSource("manual"); setJdFileName(null);
+      }
+      return;
+    }
+
+    if (isPdf) {
+      // PDF — send to backend parser
+      try {
+        const { data: upload } = await uploadService.resume(file);
+        setJobDescription((upload.full_text || upload.extracted_text_preview || "").slice(0, 8000));
+      } catch {
+        setError("Could not parse JD PDF. Try copy-pasting the text instead.");
+        setJdSource("manual"); setJdFileName(null);
+      }
+      return;
+    }
+
+    // TXT / plain text — read directly
+    const reader = new FileReader();
+    reader.onload = (e) => setJobDescription(((e.target?.result as string) ?? "").slice(0, 8000));
+    reader.onerror = () => { setError("Could not read file."); setJdSource("manual"); setJdFileName(null); };
+    reader.readAsText(file);
+  }, []);
+
+  const resetJdToJob = () => {
+    if (activeJob?.description) {
+      setJobDescription(activeJob.description);
+      setJdSource("auto");
+      setJdFileName(null);
+    }
+  };
 
   const onFilesPicked = useCallback((list: FileList | null) => {
     if (!list?.length) return;
@@ -142,16 +207,98 @@ export default function ProcessResumes() {
 
         {/* Step 1: Job Description */}
         <div className="glass rounded-2xl shadow-card p-6 space-y-4">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="h-6 w-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
-            <span className="text-sm font-semibold text-white">Job Description</span>
-            {activeJob?.description && <span className="text-xs text-emerald-400 font-medium">✓ Auto-filled</span>}
+          {/* Header row */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="h-6 w-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+              <span className="text-sm font-semibold text-white">Job Description</span>
+              {jdSource === "auto" && <span className="text-xs text-emerald-400 font-medium">✓ Auto-filled from job</span>}
+              {jdSource === "file" && <span className="text-xs text-sky-400 font-medium">✓ Loaded from {jdFileName}</span>}
+              {jdSource === "manual" && jobDescription.length > 0 && <span className="text-xs text-amber-400 font-medium">✎ Edited manually</span>}
+            </div>
+            <div className="flex items-center gap-1.5">
+              {/* Mode toggle */}
+              <div className="flex rounded-lg border border-white/10 overflow-hidden">
+                <button type="button"
+                  onClick={() => setJdMode("type")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    jdMode === "type" ? "bg-emerald-600 text-white" : "text-slate-400 hover:bg-white/10"
+                  }`}>
+                  <PenLine className="h-3 w-3" /> Type
+                </button>
+                <button type="button"
+                  onClick={() => setJdMode("upload")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    jdMode === "upload" ? "bg-emerald-600 text-white" : "text-slate-400 hover:bg-white/10"
+                  }`}>
+                  <FileUp className="h-3 w-3" /> Upload
+                </button>
+              </div>
+              {/* Reset button */}
+              {activeJob?.description && jdSource !== "auto" && (
+                <button type="button" onClick={resetJdToJob} disabled={isRunning}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-40">
+                  <RefreshCw className="h-3 w-3" /> Reset
+                </button>
+              )}
+            </div>
           </div>
-          <textarea
-            id={inputId} value={jobDescription} onChange={(e) => setJobDescription(e.target.value)}
-            rows={6} placeholder="Paste the full job description here…" disabled={isRunning}
-            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y min-h-[120px] disabled:opacity-60 placeholder:text-slate-500"
-          />
+
+          {/* Type mode */}
+          {jdMode === "type" && (
+            <textarea
+              id={inputId} value={jobDescription}
+              onChange={(e) => { setJobDescription(e.target.value); setJdSource("manual"); setJdFileName(null); }}
+              rows={6} placeholder="Paste the full job description here…" disabled={isRunning}
+              className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y min-h-[120px] disabled:opacity-60 placeholder:text-slate-500"
+            />
+          )}
+
+          {/* Upload mode */}
+          {jdMode === "upload" && (
+            <>
+              <input ref={jdFileInputRef} type="file" accept=".pdf,.txt,.doc,.docx" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) readJdFile(f); e.target.value = ""; }}
+                disabled={isRunning} />
+              {!jdFileName ? (
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setIsDraggingJd(true); }}
+                  onDragLeave={() => setIsDraggingJd(false)}
+                  onDrop={(e) => { e.preventDefault(); setIsDraggingJd(false); const f = e.dataTransfer.files?.[0]; if (f) readJdFile(f); }}
+                  onClick={() => jdFileInputRef.current?.click()}
+                  className={`flex flex-col items-center justify-center gap-3 p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all ${
+                    isDraggingJd ? "border-sky-400 bg-sky-500/10" : "border-white/10 hover:border-sky-500/50 hover:bg-white/5"
+                  }`}
+                >
+                  <FileUp className={`h-8 w-8 ${isDraggingJd ? "text-sky-400" : "text-slate-500"}`} />
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-slate-300">Drop JD file here or click to browse</p>
+                    <p className="text-xs text-slate-500 mt-1">PDF, TXT, DOC, DOCX supported</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-sky-500/10 border border-sky-500/30">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-4 w-4 text-sky-400 flex-shrink-0" />
+                    <span className="text-sm font-medium text-sky-300">{jdFileName}</span>
+                    {jobDescription && <span className="text-xs text-slate-500">{jobDescription.length} chars loaded</span>}
+                  </div>
+                  <button type="button" onClick={() => { setJdFileName(null); setJobDescription(""); setJdSource("manual"); }}
+                    className="p-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/20">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+              {/* Preview loaded text */}
+              {jdFileName && jobDescription && (
+                <textarea value={jobDescription}
+                  onChange={(e) => { setJobDescription(e.target.value); setJdSource("manual"); }}
+                  rows={5} disabled={isRunning}
+                  className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 resize-y disabled:opacity-60"
+                />
+              )}
+            </>
+          )}
         </div>
 
         {/* Step 2: Upload Resumes */}

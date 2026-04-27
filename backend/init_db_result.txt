@@ -1,2 +1,2 @@
-DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/facehire
+DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/fairhire
 SUCCESS - tables created: ['applications', 'candidates', 'hr_users', 'interviews', 'jobs']
