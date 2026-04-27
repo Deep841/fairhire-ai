@@ -508,22 +508,48 @@ def _contact_zone(text: str) -> str:
 
 
 def _normalize_contact_text(text: str) -> str:
-    """Upgrade 2 — fix spaced-out emails/phones common in PDFs: deep @ gmail . com"""
-    text = re.sub(r"([a-zA-Z0-9._%+\-])\s+@\s+", r"\1@", text)
+    """
+    Comprehensive normalization for contact zone text.
+    Handles all common PDF extraction artifacts.
+    """
+    # Fix spaced-out emails: d e e p @ g m a i l . c o m
+    # Step 1: collapse single-char sequences around @
+    text = re.sub(r"(?<=[a-zA-Z0-9])\s(?=[a-zA-Z0-9])(?=.*@)", "", text)
+
+    # Fix: deep @ gmail . com  or  deep@gmail . com
+    text = re.sub(r"([a-zA-Z0-9._%+\-])\s+@\s*", r"\1@", text)
     text = re.sub(r"@\s+([a-zA-Z0-9])", r"@\1", text)
-    text = re.sub(r"([a-zA-Z0-9])\s+\.\s+([a-zA-Z]{2,})", r"\1.\2", text)
-    text = re.sub(r"(\d)\s*-\s*(\d{3})\s*-\s*(\d{4})", r"\1-\2-\3", text)
+
+    # Fix dots in domain: gmail . com -> gmail.com
+    text = re.sub(r"([a-zA-Z0-9])\s+\.\s+([a-zA-Z]{2,6})\b", r"\1.\2", text)
+
+    # Fix [at] obfuscation: name[at]gmail.com or name (at) gmail.com
+    text = re.sub(r"\s*[\[(]\s*at\s*[\])]\s*", "@", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s+at\s+(?=[a-zA-Z0-9]+\.)", "@", text, flags=re.IGNORECASE)
+
+    # Fix [dot] obfuscation: gmail[dot]com
+    text = re.sub(r"\s*[\[(]\s*dot\s*[\])]\s*", ".", text, flags=re.IGNORECASE)
+
+    # Fix phone separators: +91-78142-92589 or +91 78142 92589
+    text = re.sub(r"(\+?\d{1,3})[-\s](\d{3,5})[-\s](\d{4,5})", r"\1\2\3", text)
+
+    # Remove zero-width and non-breaking spaces
+    text = text.replace("\u200b", "").replace("\u00a0", " ").replace("\ufeff", "")
+
     return text
 
 
 def _extract_email(text: str) -> str | None:
     """
-    Upgrade 2+3+6 — normalize first, prefer non-edu/non-college emails,
-    fallback from contact zone to full text.
+    Multi-pass email extraction:
+    1. Contact zone (first 25 lines) — normalized
+    2. Full text — normalized
+    3. Aggressive scan for any @-containing token
+    Prefers personal domains over edu/college domains.
     """
-    for search_text in [_contact_zone(text), text]:
-        normalized = _normalize_contact_text(search_text)
-        candidates: list[str] = []
+    def _scan(src: str) -> list[str]:
+        normalized = _normalize_contact_text(src)
+        found: list[str] = []
         for m in _EMAIL_RE.finditer(normalized):
             email = m.group(1).lower().strip(".")
             local = email.split("@")[0]
@@ -532,18 +558,44 @@ def _extract_email(text: str) -> str | None:
             domain = email.split("@")[1] if "@" in email else ""
             if domain in _FAKE_DOMAINS:
                 continue
+            # Reject emails inside URLs
             pos = m.start()
-            preceding = normalized[max(0, pos - 10):pos]
-            if "/" in preceding or "://" in preceding:
+            preceding = normalized[max(0, pos - 15):pos]
+            if "://" in preceding or preceding.rstrip().endswith("/"):
                 continue
-            candidates.append(email)
-        if candidates:
-            # Upgrade 3 — prefer non-edu, non-college domains
-            for email in candidates:
-                domain = email.split("@")[1]
-                if not any(domain.endswith(s) for s in (".edu", ".ac.in", ".edu.in")):
+            found.append(email)
+        return found
+
+    def _prefer(candidates: list[str]) -> str | None:
+        if not candidates:
+            return None
+        # Prefer personal domains
+        personal = [e for e in candidates if not any(
+            e.split("@")[1].endswith(s) for s in (".edu", ".ac.in", ".edu.in", ".ac.uk")
+        )]
+        return (personal or candidates)[0]
+
+    # Pass 1: contact zone
+    result = _prefer(_scan(_contact_zone(text)))
+    if result:
+        return result
+
+    # Pass 2: full text
+    result = _prefer(_scan(text))
+    if result:
+        return result
+
+    # Pass 3: aggressive — look for anything with @ in first 60 lines
+    for line in text.splitlines()[:60]:
+        line = _normalize_contact_text(line)
+        # Find token containing @
+        for token in line.split():
+            token = token.strip("<>()[]|,;")
+            if "@" in token and "." in token.split("@")[-1]:
+                email = token.lower().strip(".")
+                if re.match(r"[a-zA-Z0-9][a-zA-Z0-9._%+\-]*@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}", email):
                     return email
-            return candidates[0]  # fallback to first if all are edu
+
     return None
 
 
