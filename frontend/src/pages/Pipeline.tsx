@@ -497,6 +497,8 @@ export default function Pipeline() {
     else if (data.email_status === "failed") addToast(`${actionLabel} saved but email failed to send`, "error");
   };
 
+  const [actionLoading, setActionLoading] = useState<string | null>(null); // tracks which app_id is loading
+
   const isRealDbRecord = (app: ApplicationRecord) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(app.id);
 

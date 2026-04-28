@@ -116,6 +116,16 @@ export default function Interviews() {
   const scheduled = interviews.filter((i) => i.status === "scheduled");
   const completed = interviews.filter((i) => i.status === "completed");
 
+  function groupByCandidateId(list: InterviewRecord[]) {
+    const map = new Map<string, InterviewRecord[]>();
+    list.forEach((iv) => {
+      const arr = map.get(iv.candidate_id) ?? [];
+      arr.push(iv);
+      map.set(iv.candidate_id, arr);
+    });
+    return map;
+  }
+
   if (!activeJob) {
     return (
       <Layout>
@@ -177,8 +187,8 @@ export default function Interviews() {
                   <span className="ml-auto text-xs font-bold bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full">{scheduled.length}</span>
                 </div>
                 <ul className="divide-y divide-white/5">
-                  {scheduled.map((iv) => (
-                    <InterviewRow key={iv.id} iv={iv} candidateName={candidates[iv.candidate_id] ?? ""} onScore={() => setScoreModal(iv)} />
+                  {Array.from(groupByCandidateId(scheduled)).map(([candidateId, ivs]) => (
+                    <CandidateInterviewGroup key={candidateId} candidateName={candidates[candidateId] ?? ""} candidateId={candidateId} interviews={ivs} onScore={setScoreModal} />
                   ))}
                 </ul>
               </div>
@@ -193,8 +203,8 @@ export default function Interviews() {
                   <span className="ml-auto text-xs font-bold bg-white/10 text-slate-300 px-2.5 py-0.5 rounded-full">{completed.length}</span>
                 </div>
                 <ul className="divide-y divide-white/5">
-                  {completed.map((iv) => (
-                    <InterviewRow key={iv.id} iv={iv} candidateName={candidates[iv.candidate_id] ?? ""} onScore={() => setScoreModal(iv)} />
+                  {Array.from(groupByCandidateId(completed)).map(([candidateId, ivs]) => (
+                    <CandidateInterviewGroup key={candidateId} candidateName={candidates[candidateId] ?? ""} candidateId={candidateId} interviews={ivs} onScore={setScoreModal} />
                   ))}
                 </ul>
               </div>
@@ -214,30 +224,46 @@ export default function Interviews() {
   );
 }
 
-function InterviewRow({ iv, candidateName, onScore }: { iv: InterviewRecord; candidateName: string; onScore: () => void }) {
-  const date = iv.scheduled_at ? new Date(iv.scheduled_at).toLocaleString() : "—";
+function CandidateInterviewGroup({
+  candidateName, candidateId, interviews, onScore,
+}: {
+  candidateName: string;
+  candidateId: string;
+  interviews: InterviewRecord[];
+  onScore: (iv: InterviewRecord) => void;
+}) {
   return (
-    <li className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap hover:bg-white/5 transition-colors">
-      <div className="flex items-center gap-3 min-w-0">
+    <li className="px-6 py-4 hover:bg-white/5 transition-colors">
+      <div className="flex items-center gap-3 mb-3">
         <UserCircle className="h-9 w-9 text-slate-600 flex-shrink-0" />
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Link to={`/candidates/${iv.candidate_id}`} className="text-sm font-semibold text-emerald-400 hover:underline">
-              {candidateName || "Unknown Candidate"}
-            </Link>
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${roundBadge(iv.round_number)}`}>Round {iv.round_number}</span>
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${statusBadge(iv.status)}`}>{iv.status}</span>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">{date}</p>
-          {iv.meet_link && <a href={iv.meet_link} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:underline mt-0.5 block truncate max-w-xs">{iv.meet_link}</a>}
-          {iv.score !== null && <p className="text-xs font-semibold text-emerald-400 mt-1">Score: {iv.score}/100</p>}
-          {iv.feedback && <p className="text-xs text-slate-500 mt-0.5 truncate max-w-sm italic">"{iv.feedback}"</p>}
-        </div>
+        <Link to={`/candidates/${candidateId}`} className="text-sm font-semibold text-emerald-400 hover:underline">
+          {candidateName || "Unknown Candidate"}
+        </Link>
+        <span className="text-xs text-slate-500">{interviews.length} session{interviews.length > 1 ? "s" : ""}</span>
       </div>
-      <button onClick={onScore}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 flex-shrink-0">
-        <Star className="h-3.5 w-3.5" />{iv.score !== null ? "Update score" : "Submit score"}
-      </button>
+      <div className="ml-12 space-y-2">
+        {interviews.map((iv) => {
+          const date = iv.scheduled_at ? new Date(iv.scheduled_at).toLocaleString() : "—";
+          return (
+            <div key={iv.id} className="flex items-center justify-between gap-4 flex-wrap bg-white/5 rounded-xl px-4 py-2.5">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${roundBadge(iv.round_number)}`}>Round {iv.round_number}</span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${statusBadge(iv.status)}`}>{iv.status}</span>
+                <span className="text-xs text-slate-500">{date}</span>
+                {iv.meet_link && (
+                  <a href={iv.meet_link} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:underline truncate max-w-xs">{iv.meet_link}</a>
+                )}
+                {iv.score !== null && <span className="text-xs font-semibold text-emerald-400">Score: {iv.score}/100</span>}
+                {iv.feedback && <span className="text-xs text-slate-500 italic truncate max-w-sm">"{iv.feedback}"</span>}
+              </div>
+              <button onClick={() => onScore(iv)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 flex-shrink-0">
+                <Star className="h-3.5 w-3.5" />{iv.score !== null ? "Update score" : "Submit score"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </li>
   );
 }

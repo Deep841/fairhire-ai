@@ -113,15 +113,27 @@ async def create_interview(
         job = None
 
     if candidate and job and body.scheduled_at:
-        await send_interview_confirmation(
-            candidate_email=candidate.email,
-            candidate_name=candidate.full_name,
-            job_title=job.title,
-            interview_date=body.scheduled_at.strftime("%B %d, %Y"),
-            interview_time=body.scheduled_at.strftime("%I:%M %p"),
-            meet_link=body.meet_link,
-            notes=body.notes,
+        # Check if interview confirmation already sent for this candidate+job+round
+        from sqlalchemy import select as _select
+        existing = await db.execute(
+            _select(Interview).where(
+                Interview.candidate_id == cand_uuid,
+                Interview.job_id == job_uuid,
+                Interview.round_number == body.round_number,
+                Interview.id != interview.id,
+            ).limit(1)
         )
+        already_scheduled = existing.scalars().first() is not None
+        if not already_scheduled:
+            await send_interview_confirmation(
+                candidate_email=candidate.email,
+                candidate_name=candidate.full_name,
+                job_title=job.title,
+                interview_date=body.scheduled_at.strftime("%B %d, %Y"),
+                interview_time=body.scheduled_at.strftime("%I:%M %p"),
+                meet_link=body.meet_link,
+                notes=body.notes,
+            )
 
     return InterviewOut.from_orm_safe(interview)
 

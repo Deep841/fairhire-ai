@@ -230,13 +230,14 @@ async def reject_application(
     app = await application_service.get_by_id(db, app_id)
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
+    already_rejected = app.stage == "rejected"
     app = await application_service.update_stage(db, app, "rejected", status="rejected")
     candidate: Candidate | None = await db.get(Candidate, app.candidate_id)
     job: Job | None = await db.get(Job, app.job_id)
     email_sent = False
-    if candidate and job:
+    if candidate and job and not already_rejected:
         email_sent = await send_rejection(candidate.email, candidate.full_name, job.title)
-    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "failed")
+    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "already_sent" if already_rejected else "failed")
     return await _enrich(db, app, email_sent=email_sent, email_status=status)
 
 
@@ -250,13 +251,14 @@ async def make_offer(
     app = await application_service.get_by_id(db, app_id)
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
+    already_offered = app.stage == "offered"
     app = await application_service.update_stage(db, app, "offered", status="offered")
     candidate: Candidate | None = await db.get(Candidate, app.candidate_id)
     job: Job | None = await db.get(Job, app.job_id)
     email_sent = False
-    if candidate and job:
+    if candidate and job and not already_offered:
         email_sent = await send_offer(candidate.email, candidate.full_name, job.title, body.draft)
-    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "failed")
+    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "already_sent" if already_offered else "failed")
     return await _enrich(db, app, email_sent=email_sent, email_status=status)
 
 
@@ -270,10 +272,11 @@ async def send_test_link_route(
     app = await application_service.get_by_id(db, app_id)
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
+    already_sent = app.stage in ("testing", "test_sent")
     candidate: Candidate | None = await db.get(Candidate, app.candidate_id)
     job: Job | None = await db.get(Job, app.job_id)
     email_sent = False
-    if candidate and job:
+    if candidate and job and not already_sent:
         email_sent = await send_test_link(
             candidate_email=candidate.email,
             candidate_name=candidate.full_name,
@@ -282,7 +285,7 @@ async def send_test_link_route(
             deadline=body.deadline,
         )
     app = await application_service.update_stage(db, app, "testing")
-    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "failed")
+    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "already_sent" if already_sent else "failed")
     return await _enrich(db, app, email_sent=email_sent, email_status=status)
 
 
