@@ -33,7 +33,7 @@ class RegisterIn(BaseModel):
     email: EmailStr
     password: str
     full_name: str
-    role: str = "hr"  # hr | admin | interviewer
+    # role is hardcoded to "hr" — only admins can elevate roles via separate endpoint
 
 
 class TokenOut(BaseModel):
@@ -68,7 +68,7 @@ async def register(body: RegisterIn, db: AsyncSession = Depends(get_db)) -> Toke
         email=body.email,
         hashed_password=hash_password(body.password),
         full_name=body.full_name,
-        role=body.role,
+        role="hr",  # hardcoded — prevents privilege escalation on self-registration
     )
     db.add(user)
     await db.commit()

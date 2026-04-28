@@ -12,7 +12,7 @@ POST   /api/v1/applications/{id}/offer       — make offer + send email
 from __future__ import annotations
 
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -197,9 +197,12 @@ async def advance_stage(
 async def test_score_webhook(
     body: TestScoreIn,
     app_id: uuid.UUID = Query(..., description="Application UUID — provided by the test platform callback URL"),
+    x_webhook_secret: str | None = Header(None, alias="X-Webhook-Secret"),
     db: AsyncSession = Depends(get_db),
 ) -> ApplicationOut:
     """Public webhook — called by HackerRank/Mettl/any test platform to auto-ingest scores."""
+    if not settings.WEBHOOK_SECRET or x_webhook_secret != settings.WEBHOOK_SECRET:
+        raise HTTPException(status_code=401, detail="Invalid or missing X-Webhook-Secret")
     app = await application_service.get_by_id(db, app_id)
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
@@ -237,8 +240,8 @@ async def reject_application(
     email_sent = False
     if candidate and job and not already_rejected:
         email_sent = await send_rejection(candidate.email, candidate.full_name, job.title)
-    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "already_sent" if already_rejected else "failed")
-    return await _enrich(db, app, email_sent=email_sent, email_status=status)
+    email_label = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "already_sent" if already_rejected else "failed")
+    return await _enrich(db, app, email_sent=email_sent, email_status=email_label)
 
 
 @router.post("/{app_id}/offer", response_model=ApplicationOut)
@@ -258,8 +261,8 @@ async def make_offer(
     email_sent = False
     if candidate and job and not already_offered:
         email_sent = await send_offer(candidate.email, candidate.full_name, job.title, body.draft)
-    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "already_sent" if already_offered else "failed")
-    return await _enrich(db, app, email_sent=email_sent, email_status=status)
+    email_label = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "already_sent" if already_offered else "failed")
+    return await _enrich(db, app, email_sent=email_sent, email_status=email_label)
 
 
 @router.post("/{app_id}/send-test-link", response_model=ApplicationOut)
@@ -285,8 +288,8 @@ async def send_test_link_route(
             deadline=body.deadline,
         )
     app = await application_service.update_stage(db, app, "testing")
-    status = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "already_sent" if already_sent else "failed")
-    return await _enrich(db, app, email_sent=email_sent, email_status=status)
+    email_label = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "already_sent" if already_sent else "failed")
+    return await _enrich(db, app, email_sent=email_sent, email_status=email_label)
 
 
 @router.delete("/{app_id}", status_code=204)

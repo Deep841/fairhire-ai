@@ -48,5 +48,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 480  # 8 hours
 
+    # Webhook
+    WEBHOOK_SECRET: str = ""  # shared secret for POST /webhook/test-score
+
 
 settings = Settings()

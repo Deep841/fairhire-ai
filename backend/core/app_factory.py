@@ -40,7 +40,10 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
 
     if settings.JWT_SECRET == "CHANGE_ME_SET_JWT_SECRET_IN_DOT_ENV":
-        log.warning("SECURITY: JWT_SECRET is not set in .env — set a strong random secret before deploying!")
+        raise RuntimeError(
+            "JWT_SECRET is not set. "
+            "Set a strong random secret in .env before starting the server."
+        )
     if settings.SMTP_ENABLED and not settings.SMTP_USERNAME:
         log.warning("SMTP_ENABLED=true but SMTP_USERNAME is empty — emails will fail. Set SMTP credentials in .env.")
 

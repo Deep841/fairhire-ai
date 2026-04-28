@@ -15,6 +15,7 @@ total always sums to 100%.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from dataclasses import dataclass
@@ -98,7 +99,6 @@ async def match_candidate_to_jd(
     )
 
     # Run semantic + impact concurrently with gather (safer than create_task)
-    import asyncio
     sem_score, (impact_score, impact_highlights) = await asyncio.gather(
         semantic_similarity(profile_text, jd_text),
         score_impact(resume_text or profile_text, jd_text),
