@@ -12,7 +12,7 @@ import { useAuth } from "../context/AuthContext";
 interface LayoutProps { children: ReactNode; }
 
 const NAV_ITEMS = [
-  { path: "/",                icon: LayoutDashboard, label: "Dashboard",       desc: "Live hiring overview"   },
+  { path: "/dashboard",        icon: LayoutDashboard, label: "Dashboard",       desc: "Live hiring overview"   },
   { path: "/jobs",            icon: Briefcase,       label: "Jobs",            desc: "Manage requisitions"   },
   { path: "/process-resumes", icon: FileStack,       label: "Upload Resumes",  desc: "Parse & score CVs"     },
   { path: "/pipeline",        icon: GitBranch,       label: "Pipeline",        desc: "Kanban hiring board"   },
@@ -146,7 +146,7 @@ export default function Layout({ children }: LayoutProps) {
           <p className="px-2 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Navigation</p>
         )}
         {NAV_ITEMS.map(({ path, icon: Icon, label, desc }) => {
-          const active = location.pathname === path;
+          const active = location.pathname === path || (path !== "/dashboard" && location.pathname.startsWith(path));
           return (
             <Link
               key={path}

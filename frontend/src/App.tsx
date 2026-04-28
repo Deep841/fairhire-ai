@@ -7,6 +7,7 @@ import Interviews from "./pages/Interviews";
 import Pipeline from "./pages/Pipeline";
 import CandidateProfile from "./pages/CandidateProfile";
 import Login from "./pages/Login";
+import Landing from "./pages/Landing";
 import Layout from "./components/Layout";
 import { PipelineProvider } from "./context/PipelineContext";
 import { JobProvider } from "./context/JobContext";
@@ -22,20 +23,32 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RedirectIfAuth({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
   return (
     <>
       <Routes>
-      <Route path="/login" element={<Login />} />
+        {/* Public */}
+        <Route path="/" element={<RedirectIfAuth><Landing /></RedirectIfAuth>} />
+        <Route path="/login" element={<RedirectIfAuth><Login /></RedirectIfAuth>} />
 
-      <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
-      <Route path="/process-resumes" element={<RequireAuth><ProcessResumes /></RequireAuth>} />
-      <Route path="/pipeline" element={<RequireAuth><Pipeline /></RequireAuth>} />
-      <Route path="/candidates" element={<RequireAuth><Candidates /></RequireAuth>} />
-      <Route path="/candidates/:candidateId" element={<RequireAuth><CandidateProfile /></RequireAuth>} />
-      <Route path="/jobs" element={<RequireAuth><Layout><Jobs /></Layout></RequireAuth>} />
-      <Route path="/interviews" element={<RequireAuth><Interviews /></RequireAuth>} />
+        {/* Protected */}
+        <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/process-resumes" element={<RequireAuth><ProcessResumes /></RequireAuth>} />
+        <Route path="/pipeline" element={<RequireAuth><Pipeline /></RequireAuth>} />
+        <Route path="/candidates" element={<RequireAuth><Candidates /></RequireAuth>} />
+        <Route path="/candidates/:candidateId" element={<RequireAuth><CandidateProfile /></RequireAuth>} />
+        <Route path="/jobs" element={<RequireAuth><Layout><Jobs /></Layout></RequireAuth>} />
+        <Route path="/interviews" element={<RequireAuth><Interviews /></RequireAuth>} />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {isAuthenticated && <RecruiterChat />}
     </>
