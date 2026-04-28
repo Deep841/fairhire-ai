@@ -8,9 +8,9 @@ from db.models import Interview
 
 async def create(
     db: AsyncSession,
-    candidate_id: str,
-    job_id: str,
-    application_id: str | None = None,
+    candidate_id: uuid.UUID,
+    job_id: uuid.UUID,
+    application_id: uuid.UUID | None = None,
     round_number: int = 1,
     interviewer_name: str | None = None,
     status: str = "scheduled",

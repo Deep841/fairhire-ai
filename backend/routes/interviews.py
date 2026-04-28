@@ -52,6 +52,23 @@ class InterviewOut(BaseModel):
 
     model_config = {"from_attributes": True}
 
+    @classmethod
+    def from_orm_safe(cls, obj: "Interview") -> "InterviewOut":
+        return cls(
+            id=str(obj.id),
+            candidate_id=str(obj.candidate_id),
+            job_id=str(obj.job_id),
+            application_id=str(obj.application_id) if obj.application_id else None,
+            round_number=obj.round_number,
+            interviewer_name=obj.interviewer_name,
+            status=obj.status,
+            scheduled_at=obj.scheduled_at,
+            meet_link=obj.meet_link,
+            notes=obj.notes,
+            score=obj.score,
+            feedback=obj.feedback,
+        )
+
 
 class ScoreIn(BaseModel):
     score: float
@@ -68,11 +85,18 @@ async def create_interview(
     db: AsyncSession = Depends(get_db),
     _: HRUser = Depends(get_current_user),
 ):
+    try:
+        cand_uuid = uuid.UUID(body.candidate_id)
+        job_uuid = uuid.UUID(body.job_id)
+        app_uuid = uuid.UUID(body.application_id) if body.application_id else None
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid UUID: {e}")
+
     interview = await interview_service.create(
         db,
-        candidate_id=body.candidate_id,
-        job_id=body.job_id,
-        application_id=body.application_id,
+        candidate_id=cand_uuid,
+        job_id=job_uuid,
+        application_id=app_uuid,
         round_number=body.round_number,
         interviewer_name=body.interviewer_id,
         status=body.status,
@@ -81,15 +105,14 @@ async def create_interview(
         notes=body.notes,
     )
 
-    import uuid as _uuid
     try:
-        candidate: Candidate | None = await db.get(Candidate, _uuid.UUID(body.candidate_id))
-        job: Job | None = await db.get(Job, _uuid.UUID(body.job_id))
+        candidate: Candidate | None = await db.get(Candidate, cand_uuid)
+        job: Job | None = await db.get(Job, job_uuid)
     except Exception:
         candidate = None
         job = None
+
     if candidate and job and body.scheduled_at:
-        # Email candidate
         await send_interview_confirmation(
             candidate_email=candidate.email,
             candidate_name=candidate.full_name,
@@ -99,20 +122,8 @@ async def create_interview(
             meet_link=body.meet_link,
             notes=body.notes,
         )
-        # Email interviewer if assigned (interviewer_id is now a name string)
-        if body.interviewer_id and body.interviewer_id.strip():
-            await send_interviewer_notification(
-                interviewer_email=candidate.email,  # notify via candidate email in demo
-                interviewer_name=body.interviewer_id,
-                candidate_name=candidate.full_name,
-                job_title=job.title,
-                interview_date=body.scheduled_at.strftime("%B %d, %Y"),
-                interview_time=body.scheduled_at.strftime("%I:%M %p"),
-                meet_link=body.meet_link,
-                notes=body.notes,
-            )
 
-    return interview
+    return InterviewOut.from_orm_safe(interview)
 
 
 @router.get("/", response_model=list[InterviewOut])
@@ -122,13 +133,14 @@ async def list_interviews(
     _: HRUser = Depends(get_current_user),
 ):
     if job_id:
-        # Support both hyphenated UUID and hex formats
         try:
             jid = uuid.UUID(job_id)
-            return await interview_service.list_by_job(db, jid)
+            interviews = await interview_service.list_by_job(db, jid)
         except ValueError:
-            return await interview_service.list_all(db)
-    return await interview_service.list_all(db)
+            interviews = await interview_service.list_all(db)
+    else:
+        interviews = await interview_service.list_all(db)
+    return [InterviewOut.from_orm_safe(i) for i in interviews]
 
 
 @router.patch("/{interview_id}/score", response_model=InterviewOut)
@@ -159,7 +171,7 @@ async def submit_score(
                 db, app, body.score, interview.round_number
             )
 
-    return interview
+    return InterviewOut.from_orm_safe(interview)
 
 
 @router.patch("/{interview_id}/status", response_model=InterviewOut)
@@ -179,4 +191,4 @@ async def update_status(
     interview.status = body.status
     await db.commit()
     await db.refresh(interview)
-    return interview
+    return InterviewOut.from_orm_safe(interview)
