@@ -117,23 +117,32 @@ async def create_interview(
 
 @router.get("/", response_model=list[InterviewOut])
 async def list_interviews(
-    job_id: Optional[uuid.UUID] = Query(None),
+    job_id: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     _: HRUser = Depends(get_current_user),
 ):
     if job_id:
-        return await interview_service.list_by_job(db, job_id)
+        # Support both hyphenated UUID and hex formats
+        try:
+            jid = uuid.UUID(job_id)
+            return await interview_service.list_by_job(db, jid)
+        except ValueError:
+            return await interview_service.list_all(db)
     return await interview_service.list_all(db)
 
 
 @router.patch("/{interview_id}/score", response_model=InterviewOut)
 async def submit_score(
-    interview_id: uuid.UUID,
+    interview_id: str,
     body: ScoreIn,
     db: AsyncSession = Depends(get_db),
     _: HRUser = Depends(get_current_user),
 ):
-    interview: Interview | None = await db.get(Interview, interview_id)
+    try:
+        iid = uuid.UUID(interview_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid interview ID")
+    interview: Interview | None = await db.get(Interview, iid)
     if not interview:
         raise HTTPException(status_code=404, detail="Interview not found")
 
@@ -143,9 +152,8 @@ async def submit_score(
     await db.commit()
     await db.refresh(interview)
 
-    # Propagate score to Application
     if interview.application_id:
-        app = await application_service.get_by_id(db, interview.application_id)
+        app = await application_service.get_by_id(db, uuid.UUID(str(interview.application_id)))
         if app:
             await application_service.record_interview_score(
                 db, app, body.score, interview.round_number
@@ -156,12 +164,16 @@ async def submit_score(
 
 @router.patch("/{interview_id}/status", response_model=InterviewOut)
 async def update_status(
-    interview_id: uuid.UUID,
+    interview_id: str,
     body: StatusIn,
     db: AsyncSession = Depends(get_db),
     _: HRUser = Depends(get_current_user),
 ):
-    interview: Interview | None = await db.get(Interview, interview_id)
+    try:
+        iid = uuid.UUID(interview_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid interview ID")
+    interview: Interview | None = await db.get(Interview, iid)
     if not interview:
         raise HTTPException(status_code=404, detail="Interview not found")
     interview.status = body.status
