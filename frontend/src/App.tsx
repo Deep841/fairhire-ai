@@ -44,7 +44,7 @@ function AppRoutes() {
         <Route path="/pipeline" element={<RequireAuth><Pipeline /></RequireAuth>} />
         <Route path="/candidates" element={<RequireAuth><Candidates /></RequireAuth>} />
         <Route path="/candidates/:candidateId" element={<RequireAuth><CandidateProfile /></RequireAuth>} />
-        <Route path="/jobs" element={<RequireAuth><Layout><Jobs /></Layout></RequireAuth>} />
+        <Route path="/jobs" element={<RequireAuth><Jobs /></RequireAuth>} />
         <Route path="/interviews" element={<RequireAuth><Interviews /></RequireAuth>} />
 
         {/* Fallback */}

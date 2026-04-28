@@ -635,7 +635,7 @@ export default function Pipeline() {
 
   return (
     <Layout>
-      <div className="px-4 sm:px-0 space-y-6">
+      <div className="space-y-6">
         {/* Header */}
         <div className="glass rounded-2xl shadow-card p-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">

@@ -15,14 +15,14 @@ function scoreColor(s: number) {
 
 function stageBadge(stage: string) {
   const map: Record<string, string> = {
-    applied: "bg-slate-100 text-slate-700",
+    applied:     "bg-slate-100 text-slate-700",
     shortlisted: "bg-cyan-100 text-cyan-800",
-    test_sent: "bg-sky-100 text-sky-800",
-    tested: "bg-blue-100 text-blue-800",
+    test_sent:   "bg-sky-100 text-sky-800",
+    tested:      "bg-blue-100 text-blue-800",
     interview_1: "bg-amber-100 text-amber-800",
     interview_2: "bg-purple-100 text-purple-800",
-    offered: "bg-green-100 text-green-800",
-    rejected: "bg-red-100 text-red-700",
+    offered:     "bg-green-100 text-green-800",
+    rejected:    "bg-red-100 text-red-700",
   };
   return map[stage] ?? "bg-gray-100 text-gray-700";
 }
@@ -60,8 +60,8 @@ export default function Candidates() {
   if (!activeJob) {
     return (
       <Layout>
-        <div className="max-w-lg mx-auto mt-16 text-center">
-          <div className="glass rounded-2xl shadow-card p-10">
+        <div className="max-w-md mx-auto mt-16">
+          <div className="glass rounded-2xl p-10 text-center">
             <Briefcase className="h-10 w-10 text-slate-500 mx-auto mb-4" />
             <h1 className="text-xl font-bold text-white">No active job</h1>
             <p className="mt-2 text-sm text-slate-400">Select a job from the sidebar to view its candidates.</p>
@@ -78,12 +78,13 @@ export default function Candidates() {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="glass rounded-2xl shadow-card p-6">
+
+        {/* Page header */}
+        <div className="glass rounded-2xl p-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4">
               <div className="bg-emerald-500/20 rounded-xl p-3 flex-shrink-0">
-                <Users className="h-7 w-7 text-emerald-400" />
+                <Users className="h-6 w-6 text-emerald-400" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">Candidates</h1>
@@ -104,7 +105,7 @@ export default function Candidates() {
         {loading && applications.length === 0 ? (
           <div className="flex justify-center py-24"><Loader2 className="h-8 w-8 text-emerald-400 animate-spin" /></div>
         ) : applications.length === 0 ? (
-          <div className="glass rounded-2xl shadow-card p-10 text-center">
+          <div className="glass rounded-2xl p-12 text-center">
             <Users className="h-10 w-10 text-slate-500 mx-auto mb-4" />
             <h2 className="text-lg font-bold text-white">No candidates yet</h2>
             <p className="mt-2 text-sm text-slate-400">Upload resumes to start scoring candidates for <strong className="text-white">{activeJob.title}</strong>.</p>
@@ -114,25 +115,21 @@ export default function Candidates() {
             </Link>
           </div>
         ) : (
-          <div className="glass rounded-2xl shadow-card overflow-hidden">
+          <div className="glass rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-white/10">
                 <thead style={{ background: "rgba(255,255,255,0.05)" }}>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Candidate</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Stage</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Resume</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Test</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Interview</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Final Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Matched Skills</th>
+                    {["Candidate", "Stage", "Resume", "Test", "Interview", "Final Score", "Matched Skills"].map((h) => (
+                      <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {sorted.map((app, i) => {
                     const finalScore = app.final_score ?? app.resume_score;
                     return (
-                      <tr key={app.id} className={i % 2 === 1 ? "bg-white/5" : ""}>
+                      <tr key={app.id} className={`hover:bg-white/5 transition-colors ${i % 2 === 1 ? "bg-white/[0.02]" : ""}`}>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3 min-w-0">
                             <UserCircle className="h-8 w-8 text-slate-600 flex-shrink-0" />

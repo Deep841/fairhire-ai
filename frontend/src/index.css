@@ -57,4 +57,10 @@
   .shadow-glow-sm {
     box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
   }
+
+  /* Uniform page content width — applied once in Layout, never in pages */
+  .page-content {
+    width: 100%;
+    max-width: 1280px;
+  }
 }

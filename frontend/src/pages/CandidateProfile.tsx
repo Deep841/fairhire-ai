@@ -219,7 +219,7 @@ export default function CandidateProfile() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto space-y-6 px-4 sm:px-0">
+      <div className="max-w-4xl space-y-6">
 
         {/* Back */}
         <button onClick={() => navigate(-1)}

@@ -179,7 +179,7 @@ export default function ProcessResumes() {
 
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto px-4 sm:px-0 space-y-6">
+      <div className="space-y-6">
 
         {/* Header */}
         <div className="glass rounded-2xl shadow-card p-6">

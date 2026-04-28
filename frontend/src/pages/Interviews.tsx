@@ -129,10 +129,12 @@ export default function Interviews() {
   if (!activeJob) {
     return (
       <Layout>
-        <div className="px-4 sm:px-0 max-w-2xl mx-auto text-center py-16">
-          <Calendar className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-white">No active job</h1>
-          <p className="mt-2 text-slate-400">Select a job from the navbar to view its interviews.</p>
+        <div className="max-w-md mx-auto mt-16">
+          <div className="glass rounded-2xl p-10 text-center">
+            <Calendar className="h-10 w-10 text-slate-500 mx-auto mb-4" />
+            <h1 className="text-xl font-bold text-white">No active job</h1>
+            <p className="mt-2 text-sm text-slate-400">Select a job from the sidebar to view its interviews.</p>
+          </div>
         </div>
       </Layout>
     );
@@ -140,7 +142,7 @@ export default function Interviews() {
 
   return (
     <Layout>
-      <div className="px-4 sm:px-0 space-y-6">
+      <div className="space-y-6">
         {/* Header */}
         <div className="glass rounded-2xl shadow-card p-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
