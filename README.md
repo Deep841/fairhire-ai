@@ -10,17 +10,17 @@ FairHire AI is a full-stack Gen AI application that integrates **resume parsing*
 
 | Feature | Description |
 |---------|-------------|
-| 📄 **Resume Parsing** | Upload PDF/DOCX → dual-parser pipeline (pypdf → pdfplumber → Gemini fallback) with 6-pass text cleanup; extracts name, email, phone, skills, education, certifications |
+| 📄 **Resume Parsing** | Upload PDF/DOCX → dual-parser pipeline (pypdf → pdfplumber → Gemini fallback) with 6-pass text cleanup; extracts name, email, phone, skills, education, certifications. Runs in a thread pool — never blocks the async event loop |
 | 🧠 **AI Fit Scoring** | Hybrid scoring: weighted skill overlap (20%) + Gemini semantic embeddings (30%) + Gemini impact analysis (40%) + experience relevance (10%) with missing skill penalty |
 | 🔍 **Skill Taxonomy** | 80+ skills with aliases and importance weights; 4-tier section-aware extraction pipeline (skills section → project stacks → experience → full text fallback) |
 | 📊 **Analytics Dashboard** | Score distribution, skill gap analysis, interview readiness, AI insights, recommendation breakdown |
 | 🤖 **Recruiter Chatbot** | Rule-based AI assistant using real DB data — top candidates, shortlist recommendations, pipeline breakdown, hiring decisions, JD analysis, resume tips |
 | 🔗 **Link Verification** | GitHub repo/profile + LinkedIn URL verification with commit activity detection |
-| 📧 **Email Automation** | SMTP-based notifications at every pipeline stage — test invite, tech interview, HR interview, offer letter, rejection |
-| 🏗️ **Hiring Pipeline** | Kanban board: Applied → Shortlisted → Test Sent → Assessed → Round 1 → Round 2 → Offered / Rejected |
+| 📧 **Email Automation** | SMTP/Brevo/Resend notifications at every pipeline stage — test invite, tech interview, HR interview, offer letter, rejection |
+| 🏗️ **Hiring Pipeline** | Stage-grouped table view: Applied → Shortlisted → Testing → Interviewing → Offered / Rejected with bulk actions |
 | 📝 **JD Optimizer** | Analyzes job descriptions for length, missing sections, vague language, skill coverage, salary info |
 | ⚖️ **Decision Engine** | Strong Hire / Hire / Hold / Reject decisions using composite score from fit + test + interview scores |
-| 🔐 **Auth** | JWT-based authentication, bcrypt passwords, role-based access |
+| 🔐 **Auth** | JWT-based authentication, bcrypt passwords, role-based access. All users register as `hr` — privilege escalation on self-registration is blocked |
 | ☁️ **Cloud Ready** | Dockerized backend + frontend, Terraform modules for AWS VPC, ECS, RDS |
 
 ---
@@ -36,10 +36,10 @@ FairHire AI is a full-stack Gen AI application that integrates **resume parsing*
 | **Frontend** | React 18 + TypeScript + Vite + Tailwind CSS |
 | **Database** | PostgreSQL 16 (prod) / SQLite (dev fallback — auto-detected) |
 | **ORM** | SQLAlchemy 2.0 async |
-| **PDF Parsing** | pypdf + pdfplumber (dual-parser with confidence scoring) + Gemini fallback |
+| **PDF Parsing** | pypdf + pdfplumber (dual-parser with confidence scoring) + Gemini fallback, offloaded via `run_in_executor` |
 | **Embeddings** | Gemini `text-embedding-004` via `google-genai` SDK, cached with `lru_cache` |
 | **Auth** | python-jose (JWT) + passlib/bcrypt |
-| **Email** | smtplib SMTP with HTML templates |
+| **Email** | smtplib SMTP / Brevo API / Resend API with HTML templates |
 | **Container** | Docker + docker-compose |
 | **Infra** | Terraform — AWS VPC, ECS, RDS modules |
 
@@ -56,8 +56,7 @@ Resume Upload (PDF / DOCX)
 │  • Primary: pypdf → 6-pass cleanup pipeline                 │
 │  • Fallback 1: pdfplumber (low heading confidence)          │
 │  • Fallback 2: Gemini (graphic/column resumes)              │
-│  • Emails & phones masked before cleanup to prevent         │
-│    corruption by space-insertion passes                     │
+│  • Runs in thread pool via run_in_executor (non-blocking)   │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
@@ -117,19 +116,28 @@ Resume Upload (PDF / DOCX)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/v1/auth/register` | Register HR user |
+| `POST` | `/api/v1/auth/register` | Register HR user (role hardcoded to `hr`) |
 | `POST` | `/api/v1/auth/login` | Login → JWT token |
+| `GET` | `/api/v1/auth/me` | Current user profile |
 | `GET` | `/api/v1/jobs/` | List all jobs |
 | `POST` | `/api/v1/jobs/` | Create job requisition |
 | `POST` | `/api/v1/jobs/{id}/publish` | Publish to LinkedIn/Naukri/X |
-| `POST` | `/api/v1/upload/resume` | Upload + parse + score resume |
+| `POST` | `/api/v1/upload/resume` | Upload + parse + score resume (async, non-blocking) |
 | `POST` | `/api/v1/match/jd` | Score candidate against JD |
-| `GET` | `/api/v1/applications/` | List applications (by job) |
+| `GET` | `/api/v1/applications/?job_id=&limit=&offset=` | List applications with pagination |
 | `PATCH` | `/api/v1/applications/{id}/stage` | Advance pipeline stage |
 | `POST` | `/api/v1/applications/{id}/offer` | Send offer letter |
 | `POST` | `/api/v1/applications/{id}/reject` | Send rejection email |
+| `POST` | `/api/v1/applications/{id}/send-test-link` | Send assessment link |
+| `POST` | `/api/v1/applications/{id}/test-score` | Record test score |
+| `GET` | `/api/v1/applications/{id}/offer-draft` | AI-generated offer letter draft |
+| `POST` | `/api/v1/applications/webhook/test-score` | Webhook for test platforms (requires `X-Webhook-Secret` header) |
+| `GET` | `/api/v1/candidates/?limit=&offset=` | List candidates with pagination |
+| `GET` | `/api/v1/candidates/{id}` | Candidate profile |
 | `POST` | `/api/v1/interviews/` | Schedule interview |
+| `GET` | `/api/v1/interviews/?job_id=&limit=&offset=` | List interviews with pagination |
 | `PATCH` | `/api/v1/interviews/{id}/score` | Submit interview score |
+| `PATCH` | `/api/v1/interviews/{id}/status` | Update interview status |
 | `POST` | `/api/v1/analytics/summary` | Dashboard analytics |
 | `POST` | `/api/v1/chat/` | Recruiter chatbot |
 
@@ -180,8 +188,13 @@ pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env — set GEMINI_API_KEY, DATABASE_URL, JWT_SECRET
+# Edit .env — set GEMINI_API_KEY, DATABASE_URL, JWT_SECRET, WEBHOOK_SECRET
+```
 
+> ⚠️ **Required:** `JWT_SECRET` must be set to a strong random string. The server will **refuse to start** if it is left as the default placeholder.
+> Generate one with: `python -c "import secrets; print(secrets.token_hex(32))"`
+
+```bash
 # Start server
 uvicorn main:app --reload
 ```
@@ -203,6 +216,25 @@ npm run dev
 ```
 Register a new account at http://localhost:3000
 ```
+
+---
+
+## ⚙️ Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `JWT_SECRET` | **Yes** | Strong random secret for signing JWT tokens. Server refuses to start without it |
+| `DATABASE_URL` | No | PostgreSQL connection string. Falls back to SQLite if unset or unreachable |
+| `GEMINI_API_KEY` | No | Google Gemini API key. Scoring falls back to deterministic mode if unset |
+| `WEBHOOK_SECRET` | No | Shared secret for `POST /webhook/test-score`. Requests without it are rejected with 401 |
+| `SMTP_ENABLED` | No | Set `true` to enable SMTP email sending |
+| `SMTP_HOST` / `SMTP_USERNAME` / `SMTP_PASSWORD` | No | SMTP credentials (Gmail, etc.) |
+| `BREVO_API_KEY` | No | Brevo (Sendinblue) transactional email — alternative to SMTP |
+| `RESEND_API_KEY` | No | Resend transactional email — fallback |
+| `ALLOWED_ORIGINS` | No | CORS origins list. Defaults to `["http://localhost:3000"]` |
+| `MAX_UPLOAD_SIZE_MB` | No | Resume upload size cap. Defaults to `10.0` |
+
+See `backend/.env.example` for a full template.
 
 ---
 
@@ -245,9 +277,9 @@ fairhire-ai/
 │   ├── routes/                # API route handlers
 │   │   ├── auth.py            # Register / login / JWT
 │   │   ├── jobs.py            # Job CRUD + publish to platforms
-│   │   ├── upload.py          # Resume upload, parse, profile, quality score
+│   │   ├── upload.py          # Resume upload, parse (async), profile, quality score
 │   │   ├── match.py           # JD fit scoring
-│   │   ├── applications.py    # Pipeline stage management
+│   │   ├── applications.py    # Pipeline stage management + webhook
 │   │   ├── interviews.py      # Schedule + score interviews
 │   │   ├── analytics.py       # Dashboard analytics
 │   │   └── chat.py            # Recruiter chatbot
@@ -262,10 +294,11 @@ fairhire-ai/
 │   │   ├── resume_quality.py  # Resume quality scorer (0-100)
 │   │   ├── jd_optimizer.py    # JD quality analyzer
 │   │   ├── decision_engine.py # Hiring decision engine
-│   │   ├── email_service.py   # SMTP email templates
+│   │   ├── email_service.py   # SMTP/Brevo/Resend email templates
 │   │   ├── workflow_service.py   # Pipeline stage orchestration
 │   │   ├── link_verifier.py   # GitHub/LinkedIn URL verification
 │   │   └── interview_questions.py  # Question generator
+│   ├── scripts/               # Dev/debug utilities (not deployed)
 │   ├── main.py
 │   ├── config.py
 │   └── requirements.txt
@@ -288,11 +321,44 @@ fairhire-ai/
 
 ## 🔒 Security
 
-- JWT authentication (bcrypt passwords, HS256 tokens, 8-hour expiry)
-- Pydantic input validation on all endpoints
-- Parameterised SQL queries via SQLAlchemy ORM (no injection risk)
-- CORS restricted to configured origins
-- File type + size validation on resume uploads (PDF/DOCX, 10MB limit)
-- Email/phone masked during PDF cleanup to prevent data corruption
-- Fake domain rejection in email extraction
-- SQLite auto-fallback if PostgreSQL unavailable (dev safety net)
+- **Role hardening** — all self-registered users get `role = "hr"`. Privilege escalation via the register endpoint is blocked server-side
+- **JWT startup guard** — server refuses to start if `JWT_SECRET` is the default placeholder value
+- **Webhook authentication** — `POST /webhook/test-score` requires a valid `X-Webhook-Secret` header; unauthenticated requests receive `401`
+- **Input length limits** — all free-text fields (`description`, `notes`, `feedback`, `resume_text`) are capped at 20,000 characters via `TextLengthMixin` to prevent Gemini quota abuse
+- **JWT authentication** — bcrypt passwords, HS256 tokens, 8-hour expiry
+- **Pydantic input validation** on all endpoints
+- **Parameterised SQL** via SQLAlchemy ORM (no injection risk)
+- **CORS** restricted to configured origins
+- **File type + size validation** on resume uploads (PDF/DOCX, 10MB limit)
+- **Email/phone masked** during PDF cleanup to prevent data corruption
+- **Fake domain rejection** in email extraction
+- **SQLite auto-fallback** if PostgreSQL unavailable (dev safety net)
+
+---
+
+## ⚡ Performance
+
+- **Non-blocking PDF parsing** — `parse_resume()` runs in a thread pool via `asyncio.run_in_executor`, keeping the FastAPI event loop free during CPU-bound PDF extraction
+- **Batch candidate loading** — `list_applications` loads all candidates in a single `SELECT ... WHERE id IN (...)` query, eliminating the previous N+1 pattern
+- **Parallel AI scoring** — semantic similarity and impact scoring run concurrently via `asyncio.gather()`
+- **Pagination** — all list endpoints (`/applications/`, `/candidates/`, `/interviews/`) support `limit` and `offset` query parameters (default: `limit=100`)
+- **JD embedding cache** — Gemini JD embeddings are cached with `lru_cache` to avoid redundant API calls within a process
+
+---
+
+## 🛠️ Development Scripts
+
+Utility and debug scripts live in `backend/scripts/` and are excluded from production deployments via `.gitignore`.
+
+```
+backend/scripts/
+├── check_health.py        # Verify server is running
+├── test_gemini.py         # Test Gemini API connectivity
+├── test_links.py          # Test link verifier
+├── smtp_test.py           # Test SMTP email sending
+├── pg_check.py            # Verify PostgreSQL connection
+├── migrate_interviews.py  # One-time interview table migration
+├── clean_duplicates.py    # Remove duplicate candidate records
+├── verify_*.py            # Sprint verification scripts
+└── debug_*.py             # Route-level debug helpers
+```
