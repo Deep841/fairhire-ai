@@ -5,14 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
 from db.session import get_db
-from db.models import HRUser
+from db.models import HRUser, TextLengthMixin
 from services import job_service
 from services.auth_service import get_current_user
 
 router = APIRouter()
 
 
-class JobIn(BaseModel):
+class JobIn(TextLengthMixin):
     title: str
     description: str | None = None
     deadline: datetime | None = None

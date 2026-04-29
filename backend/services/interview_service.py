@@ -35,14 +35,18 @@ async def create(
     return interview
 
 
-async def list_by_job(db: AsyncSession, job_id: uuid.UUID) -> list[Interview]:
+async def list_by_job(db: AsyncSession, job_id: uuid.UUID, limit: int = 100, offset: int = 0) -> list[Interview]:
     result = await db.execute(
         select(Interview).where(Interview.job_id == job_id)
         .order_by(Interview.scheduled_at.asc().nullslast())
+        .limit(limit).offset(offset)
     )
     return list(result.scalars().all())
 
 
-async def list_all(db: AsyncSession) -> list[Interview]:
-    result = await db.execute(select(Interview))
+async def list_all(db: AsyncSession, limit: int = 100, offset: int = 0) -> list[Interview]:
+    result = await db.execute(
+        select(Interview).order_by(Interview.scheduled_at.asc().nullslast())
+        .limit(limit).offset(offset)
+    )
     return list(result.scalars().all())

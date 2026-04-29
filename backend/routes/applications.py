@@ -14,10 +14,11 @@ from __future__ import annotations
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, Response
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.session import get_db
-from db.models import Application, Candidate, Job
+from db.models import Application, Candidate, Job, TextLengthMixin
 from services import application_service
 from services.auth_service import get_current_user
 from services.notification_service import send_rejection, send_offer, send_test_link
@@ -55,7 +56,7 @@ class ApplicationOut(BaseModel):
     email_status: str = ""  # "sent" | "failed" | "disabled" | ""
 
 
-class CreateApplicationIn(BaseModel):
+class CreateApplicationIn(TextLengthMixin):
     job_id: uuid.UUID
     candidate_id: uuid.UUID
     resume_score: float | None = None
@@ -95,6 +96,31 @@ class SendOfferIn(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
+async def _enrich_many(db: AsyncSession, apps: list[Application]) -> list[ApplicationOut]:
+    """Batch-load all candidates in one query — eliminates N+1."""
+    if not apps:
+        return []
+    candidate_ids = list({a.candidate_id for a in apps})
+    result = await db.execute(select(Candidate).where(Candidate.id.in_(candidate_ids)))
+    cand_map: dict[uuid.UUID, Candidate] = {c.id: c for c in result.scalars().all()}
+    out = []
+    for a in apps:
+        c = cand_map.get(a.candidate_id)
+        out.append(ApplicationOut(
+            id=str(a.id), job_id=str(a.job_id), candidate_id=str(a.candidate_id),
+            candidate_name=c.full_name if c else "Unknown",
+            candidate_email=c.email if c else "",
+            candidate_phone=c.phone if c else None,
+            resume_score=a.resume_score, test_score=a.test_score,
+            interview_score=a.interview_score, hr_interview_score=a.hr_interview_score,
+            final_score=a.final_score, stage=a.stage, status=a.status,
+            matched_skills=a.matched_skills or [], missing_skills=a.missing_skills or [],
+            applied_at=a.applied_at.isoformat(),
+            resume_weight=a.resume_weight, test_weight=a.test_weight,
+        ))
+    return out
+
+
 async def _enrich(db: AsyncSession, app: Application, email_sent: bool = False, email_status: str = "") -> ApplicationOut:
     candidate: Candidate | None = await db.get(Candidate, app.candidate_id)
     return ApplicationOut(
@@ -128,26 +154,30 @@ async def _enrich(db: AsyncSession, app: Application, email_sent: bool = False, 
 @router.get("/", response_model=list[ApplicationOut])
 async def list_applications(
     job_id: uuid.UUID,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
     _: HRUser = Depends(get_current_user),
 ) -> list[ApplicationOut]:
-    apps = await application_service.list_by_job(db, job_id)
-    return [await _enrich(db, a) for a in apps]
+    apps = await application_service.list_by_job(db, job_id, limit=limit, offset=offset)
+    return await _enrich_many(db, apps)
 
 
 @router.get("/by-candidate/{candidate_id}", response_model=list[ApplicationOut])
 async def list_by_candidate(
     candidate_id: uuid.UUID,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
     _: HRUser = Depends(get_current_user),
 ) -> list[ApplicationOut]:
-    from sqlalchemy import select
     result = await db.execute(
         select(Application).where(Application.candidate_id == candidate_id)
         .order_by(Application.applied_at.desc())
+        .limit(limit).offset(offset)
     )
     apps = list(result.scalars().all())
-    return [await _enrich(db, a) for a in apps]
+    return await _enrich_many(db, apps)
 
 
 @router.post("/", response_model=ApplicationOut, status_code=201)

@@ -82,11 +82,12 @@ async def get_by_id(db: AsyncSession, app_id: uuid.UUID) -> Application | None:
     return await db.get(Application, app_id)
 
 
-async def list_by_job(db: AsyncSession, job_id: uuid.UUID) -> list[Application]:
+async def list_by_job(db: AsyncSession, job_id: uuid.UUID, limit: int = 100, offset: int = 0) -> list[Application]:
     result = await db.execute(
         select(Application)
         .where(Application.job_id == job_id)
         .order_by(Application.final_score.desc().nullslast())
+        .limit(limit).offset(offset)
     )
     return list(result.scalars().all())
 

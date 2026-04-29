@@ -60,8 +60,8 @@ async def create(
     return candidate
 
 
-async def list_all(db: AsyncSession) -> list[Candidate]:
-    result = await db.execute(select(Candidate))
+async def list_all(db: AsyncSession, limit: int = 100, offset: int = 0) -> list[Candidate]:
+    result = await db.execute(select(Candidate).order_by(Candidate.full_name).limit(limit).offset(offset))
     return list(result.scalars().all())
 
 

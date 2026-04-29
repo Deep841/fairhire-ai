@@ -3,12 +3,26 @@ from datetime import datetime, timezone
 from sqlalchemy import String, Text, DateTime, JSON, Float, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
+from pydantic import BaseModel, field_validator
 
 from db.session import Base
 
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+# ---------------------------------------------------------------------------
+# Pydantic mixin — reusable max-length validators for free-text inputs
+# ---------------------------------------------------------------------------
+
+class TextLengthMixin(BaseModel):
+    @field_validator("description", "notes", "feedback", "resume_text", mode="before", check_fields=False)
+    @classmethod
+    def _cap_text(cls, v: str | None) -> str | None:
+        if v and len(v) > 20_000:
+            raise ValueError("Field exceeds 20,000 character limit")
+        return v
 
 
 class HRUser(Base):
@@ -78,8 +92,8 @@ class Interview(Base):
     __tablename__ = "interviews"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    candidate_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    job_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    candidate_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False, index=True)
+    job_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True)
     application_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("applications.id"), nullable=True)
     round_number: Mapped[int] = mapped_column(Integer, default=1)
     interviewer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)

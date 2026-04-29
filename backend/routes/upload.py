@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, UploadFile, status
 from pydantic import BaseModel
+import asyncio
+from functools import partial
 
 from config import settings
 from services.parser import parse_resume
@@ -82,10 +84,10 @@ async def upload_resume(file: UploadFile) -> UploadResponse:
             detail=f"File exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit.",
         )
 
-    parsed = parse_resume(
-        contents=contents,
-        filename=file.filename or "unknown",
-        content_type=file.content_type or "",
+    loop = asyncio.get_event_loop()
+    parsed = await loop.run_in_executor(
+        None,
+        partial(parse_resume, contents=contents, filename=file.filename or "unknown", content_type=file.content_type or ""),
     )
 
     profile: CandidateProfile | None = None

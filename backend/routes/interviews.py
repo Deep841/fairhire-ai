@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.session import get_db
-from db.models import Interview, Candidate, Job, HRUser
+from db.models import Interview, Candidate, Job, HRUser, TextLengthMixin
 from services import interview_service, application_service
 from services.auth_service import get_current_user
 from services.notification_service import send_interview_confirmation, send_interviewer_notification
@@ -24,7 +24,7 @@ from services.notification_service import send_interview_confirmation, send_inte
 router = APIRouter()
 
 
-class InterviewIn(BaseModel):
+class InterviewIn(TextLengthMixin):
     candidate_id: str
     job_id: str
     application_id: str | None = None
@@ -141,17 +141,19 @@ async def create_interview(
 @router.get("/", response_model=list[InterviewOut])
 async def list_interviews(
     job_id: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
     _: HRUser = Depends(get_current_user),
 ):
     if job_id:
         try:
             jid = uuid.UUID(job_id)
-            interviews = await interview_service.list_by_job(db, jid)
+            interviews = await interview_service.list_by_job(db, jid, limit=limit, offset=offset)
         except ValueError:
-            interviews = await interview_service.list_all(db)
+            interviews = await interview_service.list_all(db, limit=limit, offset=offset)
     else:
-        interviews = await interview_service.list_all(db)
+        interviews = await interview_service.list_all(db, limit=limit, offset=offset)
     return [InterviewOut.from_orm_safe(i) for i in interviews]
 
 
