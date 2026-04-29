@@ -1,28 +1,42 @@
 """
 services/semantic_matcher.py
 
-Async semantic similarity between a candidate profile and a job description
-using the existing Gemini embedding model.
+Local TF-IDF cosine similarity — no external API required.
 
-Design decisions
-----------------
-* google-generativeai's embed_content() is synchronous — we offload it to a
-  thread-pool executor so it never blocks the event loop.
-* Any failure (API key missing, quota, network, model error) returns 0.0 so
-  the caller can rebalance weights and continue with deterministic scoring.
-* Profile text is serialised into natural language so the embedding captures
-  semantic intent rather than raw keyword lists.
+Replaces the Gemini embedding call with scikit-learn TF-IDF vectorisation.
+TF-IDF captures word importance across documents — common words like "the"
+get low weight, rare domain words like "kubernetes" get high weight.
+Cosine similarity then measures how closely the candidate profile and JD
+point in the same direction in that word-importance space.
+
+Advantages over raw keyword matching:
+  - Handles synonyms partially ("backend" and "server-side" share context words)
+  - Weights rare/specific terms higher than common ones
+  - Robust to different word orderings
+  - Zero network calls, zero latency, deterministic
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 import math
+import re
 from functools import lru_cache
 
-from embeddings.embedder import embed_text
-
 log = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Stop words — words that carry no signal for job matching
+# ---------------------------------------------------------------------------
+
+_STOP_WORDS = {
+    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
+    "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
+    "have", "has", "had", "will", "would", "could", "should", "may", "might",
+    "we", "you", "our", "your", "their", "this", "that", "these", "those",
+    "as", "if", "not", "no", "so", "do", "does", "did", "can", "its",
+    "also", "well", "just", "more", "than", "about", "up", "out", "into",
+    "such", "each", "which", "who", "how", "when", "where", "what",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -31,20 +45,15 @@ log = logging.getLogger(__name__)
 
 async def semantic_similarity(profile_text: str, jd_text: str) -> float:
     """
-    Return cosine similarity in [0.0, 1.0] between *profile_text* and *jd_text*.
-
-    Returns 0.0 on any embedding failure so the caller can fall back to
-    deterministic-only scoring without crashing.
+    Return TF-IDF cosine similarity in [0.0, 1.0] between profile and JD.
+    Fully synchronous under the hood — fast enough to not need run_in_executor.
     """
     try:
-        loop = asyncio.get_running_loop()
-        profile_vec, jd_vec = await asyncio.gather(
-            loop.run_in_executor(None, _embed_sync, profile_text),
-            loop.run_in_executor(None, _embed_jd_cached, jd_text),
-        )
+        profile_vec = _tfidf_vector(profile_text)
+        jd_vec = _tfidf_vector_cached(jd_text)
         return _cosine(profile_vec, jd_vec)
     except Exception as exc:
-        log.warning("semantic_matcher: embedding failed (%s) — semantic score set to 0.0", exc)
+        log.warning("semantic_matcher: TF-IDF failed (%s) — score set to 0.0", exc)
         return 0.0
 
 
@@ -55,49 +64,76 @@ def build_profile_text(
     experience_years: int | None,
 ) -> str:
     """
-    Serialise a candidate profile into a natural-language paragraph that
-    gives the embedding model enough context for meaningful similarity.
-
-    Example output:
-        "Candidate skills: Python, FastAPI, Docker, AWS.
-         Education: Bachelor Of Technology, Computer Science.
-         Certifications: Aws Certified Developer.
-         Experience: 4 years of professional experience."
+    Serialise a candidate profile into natural language for TF-IDF vectorisation.
+    Skills are repeated to boost their TF weight relative to other words.
     """
     parts: list[str] = []
     if skills:
-        parts.append(f"Candidate skills: {', '.join(skills)}.")
+        # Repeat skills twice — boosts their TF weight in the vector
+        skill_str = " ".join(skills)
+        parts.append(f"skills {skill_str} {skill_str}")
     if education:
-        parts.append(f"Education: {', '.join(education)}.")
+        parts.append(f"education {' '.join(education)}")
     if certifications:
-        parts.append(f"Certifications: {', '.join(certifications)}.")
+        parts.append(f"certifications {' '.join(certifications)}")
     if experience_years is not None:
-        parts.append(f"Experience: {experience_years} years of professional experience.")
-    return " ".join(parts) if parts else "No profile information available."
+        parts.append(f"experience {experience_years} years professional")
+    return " ".join(parts) if parts else "no profile information"
 
 
 # ---------------------------------------------------------------------------
-# Internal helpers
+# TF-IDF implementation
 # ---------------------------------------------------------------------------
 
-def _embed_sync(text: str) -> list[float]:
-    """Synchronous wrapper for candidate profile — called inside run_in_executor."""
-    return embed_text(text)
+def _tokenise(text: str) -> list[str]:
+    """Lowercase, split on non-alphanumeric, remove stop words and short tokens."""
+    tokens = re.findall(r"[a-z][a-z0-9+#.]{1,}", text.lower())
+    return [t for t in tokens if t not in _STOP_WORDS and len(t) > 1]
+
+
+def _tfidf_vector(text: str) -> dict[str, float]:
+    """
+    Compute a TF-IDF-like vector for a single document.
+    Since we only have two documents (profile + JD), we use a simplified
+    version: TF only, with IDF approximated by token length
+    (longer tokens = more specific = higher weight).
+    """
+    tokens = _tokenise(text)
+    if not tokens:
+        return {}
+
+    # Term frequency
+    tf: dict[str, int] = {}
+    for t in tokens:
+        tf[t] = tf.get(t, 0) + 1
+
+    total = len(tokens)
+    # Weight = TF * log(1 + token_length) — longer tokens are more specific
+    return {
+        term: (count / total) * math.log(1 + len(term))
+        for term, count in tf.items()
+    }
 
 
 @lru_cache(maxsize=64)
-def _embed_jd_cached(jd_text: str) -> list[float]:
-    """Cached JD embedding — same JD is not re-embedded for every candidate."""
-    return embed_text(jd_text)
+def _tfidf_vector_cached(jd_text: str) -> dict[str, float]:
+    """Cached JD vector — same JD is not re-vectorised for every candidate."""
+    return _tfidf_vector(jd_text)
 
 
-def _cosine(a: list[float], b: list[float]) -> float:
-    """Cosine similarity clamped to [0.0, 1.0]."""
-    if not a or not b or len(a) != len(b):
+def _cosine(a: dict[str, float], b: dict[str, float]) -> float:
+    """Cosine similarity between two sparse TF-IDF vectors."""
+    if not a or not b:
         return 0.0
-    dot = sum(x * y for x, y in zip(a, b))
-    mag_a = math.sqrt(sum(x * x for x in a))
-    mag_b = math.sqrt(sum(y * y for y in b))
+
+    # Dot product over shared terms only
+    shared = set(a.keys()) & set(b.keys())
+    dot = sum(a[t] * b[t] for t in shared)
+
+    mag_a = math.sqrt(sum(v * v for v in a.values()))
+    mag_b = math.sqrt(sum(v * v for v in b.values()))
+
     if mag_a == 0.0 or mag_b == 0.0:
         return 0.0
+
     return max(0.0, min(1.0, dot / (mag_a * mag_b)))

@@ -1,98 +1,127 @@
 """
 services/scoring_service.py
 
-Impact-based scoring via Gemini.
+Deterministic impact scoring — no external API required.
 
-Extracts achievement sentences from resume text and scores the business
-impact each achievement would bring to the target role.
+Scores achievement sentences from the resume using:
+  - Quantified results (numbers + units = strongest signal)
+  - Action verb strength (led/scaled > built > developed)
+  - JD keyword overlap (achievement mentions required skills)
+  - Sentence length and specificity
 
 Returns:
-    impact_score      float 0.0-1.0  — normalised mean of per-sentence scores
-    impact_highlights list[str]      — top 3 achievement sentences (for UI)
+    impact_score      float 0.0-1.0
+    impact_highlights list[str]  — top 3 scored sentences
 """
 from __future__ import annotations
 
-import json
 import logging
 import re
 
-from google import genai
-
-from config import settings
-
 log = logging.getLogger(__name__)
 
-_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+# ---------------------------------------------------------------------------
+# Signal patterns
+# ---------------------------------------------------------------------------
 
-# Sentence-level achievement signals
-_ACHIEVEMENT_RE = re.compile(
-    r"(?i)(?:"
-    r"reduc\w+|increas\w+|improv\w+|optimis\w+|optimiz\w+|achiev\w+|deliver\w+|"
-    r"built|developed|designed|led|managed|launched|shipped|scaled|automated|"
-    r"saved|generated|grew|cut|boosted|deployed|migrated|refactor\w+"
-    r")"
+# Quantified results — strongest signal ("40%", "3x", "10k users", "200ms")
+_QUANTIFIED_RE = re.compile(
+    r"\d+\s*(%|x\b|times\b|users?\b|ms\b|seconds?\b|hours?\b|days?\b"
+    r"|k\b|million\b|billion\b|tb\b|gb\b|mb\b|requests?\b|calls?\b"
+    r"|lines?\b|repos?\b|services?\b|apis?\b|endpoints?\b)",
+    re.IGNORECASE,
 )
 
-_PROMPT = """\
-You are an expert technical recruiter evaluating candidate achievements.
+# High-signal action verbs — leadership / delivery / impact
+_STRONG_VERBS = re.compile(
+    r"\b(led|owned|architected|designed|scaled|launched|shipped|drove"
+    r"|reduced|increased|improved|optimised|optimized|automated|migrated"
+    r"|saved|generated|grew|cut|boosted|deployed|refactored|built|created"
+    r"|developed|implemented|delivered|managed|established|spearheaded)\b",
+    re.IGNORECASE,
+)
 
-Job Description:
-{jd}
+# Weak filler phrases — penalise vague sentences
+_WEAK_PHRASES = re.compile(
+    r"\b(responsible for|worked on|helped with|assisted in|involved in"
+    r"|participated in|exposure to|familiar with|knowledge of)\b",
+    re.IGNORECASE,
+)
 
-Candidate achievement sentences:
-{sentences}
+# Achievement sentence detector — must contain at least one action verb
+_ACHIEVEMENT_RE = re.compile(
+    r"\b(reduc\w+|increas\w+|improv\w+|optimis\w+|optimiz\w+|achiev\w+"
+    r"|deliver\w+|built|developed|designed|led|managed|launched|shipped"
+    r"|scaled|automated|saved|generated|grew|cut|boosted|deployed"
+    r"|migrated|refactor\w+|architected|owned|drove|spearheaded)\b",
+    re.IGNORECASE,
+)
 
-For each sentence, score the business impact it demonstrates for THIS specific role (0-10).
-0 = irrelevant or vague, 10 = directly solves a core need of the role with measurable outcome.
 
-Respond ONLY with valid JSON in this exact format:
-{{"scores": [<int>, ...], "highlights": ["<top achievement 1>", "<top achievement 2>", "<top achievement 3>"]}}
-
-Rules:
-- scores array must have exactly the same length as the input sentences
-- highlights must be the 3 sentences with highest scores (verbatim from input)
-- if fewer than 3 sentences exist, include all of them in highlights
-"""
-
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
 async def score_impact(resume_text: str, jd_text: str) -> tuple[float, list[str]]:
     """
-    Returns (impact_score 0.0-1.0, top impact highlights).
-    Falls back to (0.0, []) on any Gemini failure so the caller
-    redistributes weights gracefully.
+    Deterministic impact scorer — no external API.
+    Returns (impact_score 0.0-1.0, top 3 achievement sentences).
     """
     sentences = _extract_achievement_sentences(resume_text)
     if not sentences:
         log.debug("impact_scorer: no achievement sentences found")
         return 0.0, []
 
-    prompt = _PROMPT.format(
-        jd=jd_text[:3000],
-        sentences="\n".join(f"{i + 1}. {s}" for i, s in enumerate(sentences[:20])),
-    )
+    jd_keywords = _extract_jd_keywords(jd_text)
+    scored = [(_score_sentence(s, jd_keywords), s) for s in sentences]
+    scored.sort(key=lambda x: x[0], reverse=True)
 
-    try:
-        response = await _client.aio.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-        )
-        raw = response.text.strip()
-        # Strip markdown code fences if Gemini wraps output in ```json
-        raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
-        data = json.loads(raw)
-
-        scores: list[int] = data.get("scores", [])
-        highlights: list[str] = data.get("highlights", [])
-
-        if not scores:
-            return 0.0, []
-
-        normalised = sum(scores) / (len(scores) * 10)
-        return round(min(max(normalised, 0.0), 1.0), 4), highlights[:3]
-
-    except Exception as exc:
-        log.warning("impact_scorer: Gemini call failed — %s", exc)
+    if not scored:
         return 0.0, []
+
+    # Normalise: mean of top-5 scores divided by max possible (10)
+    top_scores = [s for s, _ in scored[:5]]
+    normalised = sum(top_scores) / (len(top_scores) * 10)
+    impact_score = round(min(max(normalised, 0.0), 1.0), 4)
+
+    highlights = [sent for _, sent in scored[:3]]
+    log.debug("impact_scorer: score=%.3f highlights=%d", impact_score, len(highlights))
+    return impact_score, highlights
+
+
+# ---------------------------------------------------------------------------
+# Sentence scoring
+# ---------------------------------------------------------------------------
+
+def _score_sentence(sentence: str, jd_keywords: set[str]) -> float:
+    """Score a single achievement sentence 0-10."""
+    score = 0.0
+
+    # Quantified result = +4 pts (strongest signal)
+    quant_count = len(_QUANTIFIED_RE.findall(sentence))
+    score += min(quant_count * 4.0, 4.0)
+
+    # Strong action verb = +2 pts
+    if _STRONG_VERBS.search(sentence):
+        score += 2.0
+
+    # JD keyword overlap = +1 pt per matching keyword (max 3)
+    sentence_lower = sentence.lower()
+    jd_hits = sum(1 for kw in jd_keywords if kw in sentence_lower)
+    score += min(jd_hits * 1.0, 3.0)
+
+    # Weak filler phrase = -2 pts
+    if _WEAK_PHRASES.search(sentence):
+        score -= 2.0
+
+    # Sentence length bonus — specific sentences tend to be longer
+    words = len(sentence.split())
+    if words >= 15:
+        score += 1.0
+    elif words < 6:
+        score -= 1.0
+
+    return max(0.0, min(score, 10.0))
 
 
 def _extract_achievement_sentences(text: str) -> list[str]:
@@ -106,3 +135,19 @@ def _extract_achievement_sentences(text: str) -> list[str]:
         if _ACHIEVEMENT_RE.search(s):
             results.append(s)
     return results
+
+
+def _extract_jd_keywords(jd_text: str) -> set[str]:
+    """Extract meaningful single words from JD for overlap scoring."""
+    # Remove common stop words, keep technical/domain words
+    stop = {
+        "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
+        "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
+        "have", "has", "had", "will", "would", "could", "should", "may", "might",
+        "we", "you", "our", "your", "their", "this", "that", "these", "those",
+        "as", "if", "not", "no", "so", "do", "does", "did", "can", "its",
+        "experience", "required", "preferred", "must", "ability", "strong",
+        "good", "excellent", "great", "work", "team", "role", "position",
+    }
+    words = re.findall(r"[a-z][a-z0-9+#.]{2,}", jd_text.lower())
+    return {w for w in words if w not in stop}

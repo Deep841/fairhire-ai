@@ -31,6 +31,7 @@ class MatchResponse(BaseModel):
     skill_overlap_score: float = Field(..., ge=0.0, le=1.0)
     education_relevance_score: float = Field(..., ge=0.0, le=1.0)
     experience_relevance_score: float = Field(..., ge=0.0, le=1.0)
+    certification_score: float = Field(..., ge=0.0, le=1.0)
     semantic_similarity_score: float = Field(..., ge=0.0, le=1.0)
     impact_score: float = Field(..., ge=0.0, le=1.0)
     impact_highlights: list[str] = Field(..., description="Top achievement sentences from resume")
@@ -73,6 +74,7 @@ async def match_jd(request: MatchRequest) -> MatchResponse:
             skill_overlap_score=result.skill_overlap_score,
             education_relevance_score=result.education_relevance_score,
             experience_relevance_score=result.experience_relevance_score,
+            certification_score=result.certification_score,
             semantic_similarity_score=result.semantic_similarity_score,
             impact_score=result.impact_score,
             impact_highlights=list(result.impact_highlights),

@@ -40,6 +40,7 @@ class MatchResult:
     skill_overlap_score: float
     education_relevance_score: float
     experience_relevance_score: float
+    certification_score: float          # new component
     semantic_similarity_score: float    # 0.0 when embedding unavailable
     impact_score: float                 # 0.0 when unavailable
     impact_highlights: tuple[str, ...]  # top achievement sentences
@@ -66,9 +67,10 @@ _EXPERIENCE_KEYWORDS = {
 }
 
 # Nominal weights — must sum to 1.0
-_W_IMPACT     = 0.40
-_W_SEMANTIC   = 0.30
+_W_IMPACT     = 0.30
+_W_SEMANTIC   = 0.25
 _W_SKILL      = 0.20
+_W_CERT       = 0.15
 _W_EXPERIENCE = 0.10
 
 
@@ -93,6 +95,7 @@ async def match_candidate_to_jd(
 
     experience_score = _compute_experience_relevance(profile.experience_years, jd_text)
     education_score  = _compute_education_relevance(profile.education, jd_text)
+    cert_score       = _compute_certification_score(profile.certifications, jd_text)
 
     profile_text = build_profile_text(
         profile.skills, profile.education, profile.certifications, profile.experience_years
@@ -109,6 +112,7 @@ async def match_candidate_to_jd(
         "impact":     _W_IMPACT     if impact_score > 0.0 else 0.0,
         "semantic":   _W_SEMANTIC   if sem_score    > 0.0 else 0.0,
         "skill":      _W_SKILL,
+        "cert":       _W_CERT,
         "experience": _W_EXPERIENCE,
     }
     total_w = sum(raw_weights.values()) or 1.0
@@ -118,6 +122,7 @@ async def match_candidate_to_jd(
         impact_score       * nw["impact"]
         + sem_score        * nw["semantic"]
         + skill_score      * nw["skill"]
+        + cert_score       * nw["cert"]
         + experience_score * nw["experience"]
     )
 
@@ -128,8 +133,8 @@ async def match_candidate_to_jd(
     fit_score = max(0, min(100, fit_score))
 
     log.debug(
-        "jd_matcher: fit=%d impact=%.2f sem=%.2f skill=%.2f exp=%.2f penalty=%.2f",
-        fit_score, impact_score, sem_score, skill_score, experience_score, missing_penalty,
+        "jd_matcher: fit=%d impact=%.2f sem=%.2f skill=%.2f cert=%.2f exp=%.2f penalty=%.2f",
+        fit_score, impact_score, sem_score, skill_score, cert_score, experience_score, missing_penalty,
     )
 
     return MatchResult(
@@ -139,6 +144,7 @@ async def match_candidate_to_jd(
         skill_overlap_score=skill_score,
         education_relevance_score=education_score,
         experience_relevance_score=experience_score,
+        certification_score=cert_score,
         semantic_similarity_score=sem_score,
         impact_score=impact_score,
         impact_highlights=tuple(impact_highlights),
@@ -151,6 +157,41 @@ async def match_candidate_to_jd(
 
 def _extract_jd_skills(jd_text: str) -> set[str]:
     return {c for c, p in _SKILL_PATTERNS.items() if p.search(jd_text)}
+
+
+# ---------------------------------------------------------------------------
+# Certification scoring
+# ---------------------------------------------------------------------------
+
+_CERT_KEYWORDS = {
+    "aws", "azure", "gcp", "google cloud", "kubernetes", "docker", "terraform",
+    "certified", "certification", "professional", "associate", "expert",
+    "cloud", "devops", "security", "architect", "developer", "engineer",
+    "scrum", "agile", "pmp", "comptia", "cissp", "cka", "ckad",
+}
+
+def _compute_certification_score(certifications: tuple[str, ...], jd_text: str) -> float:
+    """Score based on relevant certifications."""
+    if not certifications:
+        return 0.0
+    jd_lower = jd_text.lower()
+    # Check if JD mentions certifications at all
+    jd_wants_certs = any(kw in jd_lower for kw in ["certified", "certification", "cert"])
+    if not jd_wants_certs:
+        return 0.3  # baseline bonus for having any certs
+    
+    # Count how many cert keywords from JD appear in candidate's certs
+    cert_text = " ".join(certifications).lower()
+    relevant_count = sum(1 for kw in _CERT_KEYWORDS if kw in jd_lower and kw in cert_text)
+    
+    if relevant_count >= 3:
+        return 1.0
+    elif relevant_count >= 2:
+        return 0.8
+    elif relevant_count >= 1:
+        return 0.6
+    else:
+        return 0.4  # has certs but not the ones JD wants
 
 
 # ---------------------------------------------------------------------------
