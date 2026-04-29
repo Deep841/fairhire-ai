@@ -150,7 +150,7 @@ export default function ProcessResumes() {
         const { data: c } = await candidateService.create({ full_name: displayName, email, phone: profile.phone ?? null, resume_text: upload.full_text || upload.extracted_text_preview || null });
         candidateId = c.id;
         // application_service also upserts — re-uploading updates score, never duplicates
-        await applicationService.create({ job_id: activeJob.id, candidate_id: candidateId, resume_score: match.fit_score, matched_skills: match.matched_skills, missing_skills: match.missing_skills });
+        await applicationService.create({ job_id: activeJob.id, candidate_id: candidateId, resume_score: match.fit_score, matched_skills: match.matched_skills, missing_skills: match.missing_skills, score_components: match.score_components, resume_quality_score: upload.resume_quality?.score ?? null });
         processed.push({ name: displayName, email, phone: profile.phone ?? null, fitScore: match.fit_score, matchedSkills: match.matched_skills, missingSkills: match.missing_skills, links: upload.verified_links ?? [], status: "saved" });
       } catch (e) {
         processed.push({ name: file.name, email: "", phone: null, fitScore: 0, matchedSkills: [], missingSkills: [], links: [], status: "error", error: getApiErrorMessage(e, "Processing failed") });

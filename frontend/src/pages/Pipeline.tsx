@@ -525,7 +525,7 @@ export default function Pipeline() {
     if (action === "shortlist") {
       if (!isRealDbRecord(app)) { setError("Cannot shortlist — re-run pipeline to persist candidates."); return; }
       try {
-        const { data } = await applicationService.shortlist(app.id);
+        const { data } = await applicationService.shortlistOne(app.id);
         setApplications((prev) => prev.map((a) => a.id === data.id ? data : a));
         addToast(`${app.candidate_name} moved to Shortlisted`, "success");
       } catch (e) { setError(getApiErrorMessage(e, "Action failed")); }

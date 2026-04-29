@@ -35,6 +35,7 @@ class MatchResponse(BaseModel):
     semantic_similarity_score: float = Field(..., ge=0.0, le=1.0)
     impact_score: float = Field(..., ge=0.0, le=1.0)
     impact_highlights: list[str] = Field(..., description="Top achievement sentences from resume")
+    score_components: dict[str, float] = Field(default_factory=dict, description="Raw component scores for storage")
     explanation: dict[str, str]
 
 
@@ -78,6 +79,13 @@ async def match_jd(request: MatchRequest) -> MatchResponse:
             semantic_similarity_score=result.semantic_similarity_score,
             impact_score=result.impact_score,
             impact_highlights=list(result.impact_highlights),
+            score_components={
+                "impact":     round(result.impact_score, 4),
+                "semantic":   round(result.semantic_similarity_score, 4),
+                "skill":      round(result.skill_overlap_score, 4),
+                "cert":       round(result.certification_score, 4),
+                "experience": round(result.experience_relevance_score, 4),
+            },
             explanation=_generate_explanation(result),
         )
     except Exception as e:

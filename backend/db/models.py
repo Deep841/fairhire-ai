@@ -74,6 +74,16 @@ class Application(Base):
     hr_interview_score: Mapped[float | None] = mapped_column(Float)
     final_score: Mapped[float | None] = mapped_column(Float)
 
+    # Score component breakdown — stored so UI can show per-dimension bars
+    score_impact: Mapped[float | None] = mapped_column(Float)
+    score_semantic: Mapped[float | None] = mapped_column(Float)
+    score_skill: Mapped[float | None] = mapped_column(Float)
+    score_cert: Mapped[float | None] = mapped_column(Float)
+    score_experience: Mapped[float | None] = mapped_column(Float)
+
+    # Resume quality (0-100) stored from upload
+    resume_quality_score: Mapped[int | None] = mapped_column(Integer)
+
     resume_weight: Mapped[int] = mapped_column(Integer, default=60)
     test_weight: Mapped[int] = mapped_column(Integer, default=40)
 
@@ -81,6 +91,8 @@ class Application(Base):
         String(50), default="applied"
     )  # applied | shortlisted | testing | interviewing | offered | rejected
     status: Mapped[str] = mapped_column(String(50), default="active")
+
+    rejection_reason: Mapped[str | None] = mapped_column(String(500))
 
     matched_skills: Mapped[list | None] = mapped_column(JSON)
     missing_skills: Mapped[list | None] = mapped_column(JSON)
