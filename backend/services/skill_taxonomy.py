@@ -113,6 +113,8 @@ SKILL_WEIGHTS: dict[str, float] = {
     "Node.js": 1.4,
     "Go": 1.3,
     "TypeScript": 1.3,
+    "Rust": 1.4,
+    "C++": 1.3,
 
     # Data / DB
     "SQL": 1.3,
@@ -120,11 +122,14 @@ SKILL_WEIGHTS: dict[str, float] = {
     "MongoDB": 1.2,
     "Redis": 1.2,
     "Kafka": 1.3,
+    "Elasticsearch": 1.2,
 
     # Cloud / DevOps
     "Docker": 1.4,
     "Kubernetes": 1.5,
     "AWS": 1.4,
+    "GCP": 1.3,
+    "Azure": 1.3,
     "CI/CD": 1.3,
     "Terraform": 1.3,
 
@@ -133,10 +138,17 @@ SKILL_WEIGHTS: dict[str, float] = {
     "TensorFlow": 1.5,
     "LangChain": 1.4,
     "scikit-learn": 1.3,
+    "Hugging Face": 1.4,
 
     # Frontend
     "React": 1.2,
-    "TypeScript": 1.3,
+    "Next.js": 1.2,
     "Tailwind CSS": 1.1,
-    "Redux": 1.2,
+    "Redux": 1.1,
+
+    # Practices
+    "Microservices": 1.2,
+    "REST API": 1.1,
+    "GraphQL": 1.2,
+    "TDD": 1.2,
 }
