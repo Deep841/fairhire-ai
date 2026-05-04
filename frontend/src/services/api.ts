@@ -184,7 +184,9 @@ export interface UploadResponse {
   extracted_text_preview: string;
   profile_summary: ProfileSummary | null;
   verified_links: VerifiedLink[];
-  used_gemini_fallback: boolean;
+  used_fallback_parser: boolean;
+  resume_quality: Record<string, number>;
+  contact_confidence: number;
   message: string;
 }
 

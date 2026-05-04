@@ -5,8 +5,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost:5432/fairhire"
-    GEMINI_API_KEY: str = ""
-    EMBEDDING_MODEL: str = "models/gemini-embedding-001"
     ENVIRONMENT: str = "development"
 
     # Upload

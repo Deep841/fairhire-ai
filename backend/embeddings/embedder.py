@@ -1,12 +1,19 @@
-from google import genai
-from config import settings
+"""
+embeddings/embedder.py
 
-_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+Previously used Google Gemini text-embedding-004.
+Embeddings are now handled locally in services/semantic_matcher.py
+using BM25-inspired TF-IDF — no external API required.
+
+This file is kept as a stub so the import in core/routers.py
+does not break. The embed_text function is no longer called.
+"""
+from __future__ import annotations
 
 
 def embed_text(text: str) -> list[float]:
-    response = _client.models.embed_content(
-        model=settings.EMBEDDING_MODEL,
-        contents=text,
+    """Stub — local TF-IDF in semantic_matcher.py replaced this."""
+    raise NotImplementedError(
+        "embed_text is no longer used. "
+        "Semantic similarity is computed locally in services/semantic_matcher.py"
     )
-    return response.embeddings[0].values

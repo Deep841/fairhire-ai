@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import json
 import logging
 import re
 import unicodedata
@@ -10,14 +9,8 @@ from dataclasses import dataclass
 import pypdf
 import pdfplumber
 import docx
-from config import settings
 
 log = logging.getLogger(__name__)
-
-def _get_genai_client():
-    """Lazy init — avoids import-time crash if google-genai not installed."""
-    from google import genai
-    return genai.Client(api_key=settings.GEMINI_API_KEY)
 
 
 _PREVIEW_CHARS = 500
@@ -35,9 +28,9 @@ class ParsedResume:
     size_bytes: int
     detected_type: str
     full_text: str
-    raw_text_for_contacts: str   # uncleaned — used for email/phone/name extraction
+    raw_text_for_contacts: str
     extracted_text_preview: str
-    used_gemini_fallback: bool = False
+    used_fallback_parser: bool = False  # True when pdfplumber was used instead of pypdf
 
 
 def parse_resume(contents: bytes, filename: str, content_type: str) -> ParsedResume:
@@ -45,10 +38,10 @@ def parse_resume(contents: bytes, filename: str, content_type: str) -> ParsedRes
     Dispatch to the correct parser based on content_type.
     Extracts raw text AND a pre-clean snapshot for contact extraction.
     """
-    used_gemini = False
-    raw_text = ""  # uncleaned — used for contact extraction
+    used_fallback = False
+    raw_text = ""
     if content_type in _PDF_TYPES:
-        text, used_gemini, raw_text = _parse_pdf(contents)
+        text, used_fallback, raw_text = _parse_pdf(contents)
         detected = "pdf"
     elif content_type in _DOCX_TYPES:
         text = _parse_docx(contents)
@@ -70,7 +63,7 @@ def parse_resume(contents: bytes, filename: str, content_type: str) -> ParsedRes
         full_text=text,
         raw_text_for_contacts=raw_text,
         extracted_text_preview=text[:_PREVIEW_CHARS].strip(),
-        used_gemini_fallback=used_gemini,
+        used_fallback_parser=used_fallback,
     )
 
 
@@ -119,9 +112,9 @@ def _extract_pdfplumber(contents: bytes) -> str:
 
 def _parse_pdf(contents: bytes) -> tuple[str, bool, str]:
     """
-    Returns (cleaned_text, used_gemini, raw_text_for_contacts).
-    raw_text_for_contacts is the best uncleaned text — used for email/phone extraction
-    before the cleanup pipeline corrupts them.
+    Returns (cleaned_text, used_fallback_parser, raw_text_for_contacts).
+    Tries pypdf first. Falls back to pdfplumber for multi-column/graphic resumes.
+    No external API calls.
     """
     pypdf_raw     = _extract_pypdf(contents)
     pypdf_cleaned = _clean_pdf_text(pypdf_raw)
@@ -135,45 +128,11 @@ def _parse_pdf(contents: bytes) -> tuple[str, bool, str]:
     plumber_score   = _score_headings(plumber_cleaned)
 
     if plumber_score >= pypdf_score:
-        best_text, best_raw, best_score = plumber_cleaned, plumber_raw, plumber_score
-    else:
-        best_text, best_raw, best_score = pypdf_cleaned, pypdf_raw, pypdf_score
+        log.info("parser: pdfplumber gave better result (%d vs %d headings)", plumber_score, pypdf_score)
+        return plumber_cleaned, True, plumber_raw
 
-    if best_score < _HEADING_CONFIDENCE_THRESHOLD:
-        log.info("parser: low heading confidence (%d) — trying Gemini fallback", best_score)
-        gemini_text = _gemini_text_fallback(best_text)
-        if gemini_text:
-            return gemini_text, True, best_raw
-
-    return best_text, False, best_raw
-
-
-_GEMINI_EXTRACT_PROMPT = """\
-The following is raw text extracted from a resume PDF that may have unusual formatting.
-Rewrite it as clean plain text preserving all information: name, contact, skills,
-experience, education, certifications, projects. Remove decorative characters.
-Do NOT summarise — keep every detail verbatim.
-
-Raw text:
-{text}
-"""
-
-
-def _gemini_text_fallback(raw_text: str) -> str:
-    """Use Gemini to clean and restructure poorly-parsed resume text."""
-    if not raw_text.strip():
-        return ""
-    try:
-        client = _get_genai_client()
-        prompt = _GEMINI_EXTRACT_PROMPT.format(text=raw_text[:8000])
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-        )
-        return response.text.strip()
-    except Exception as exc:
-        log.warning("parser: Gemini fallback failed — %s", exc)
-        return ""
+    # pypdf was still better even though below threshold — use it
+    return pypdf_cleaned, False, pypdf_raw
 
 
 def _parse_docx(contents: bytes) -> str:

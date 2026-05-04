@@ -48,7 +48,7 @@ class UploadResponse(BaseModel):
     extracted_text_preview: str
     profile_summary: ProfileSummary | None = None
     verified_links: list[VerifiedLink] = []
-    used_gemini_fallback: bool = False
+    used_fallback_parser: bool = False
     resume_quality: dict = {}
     contact_confidence: int = 0
     message: str
@@ -62,11 +62,11 @@ class UploadResponse(BaseModel):
     "/resume",
     response_model=UploadResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Upload, parse, profile and verify candidate resume",
+    summary="Upload, parse and profile a candidate resume",
     description=(
         "Accepts PDF or DOCX resume files up to the configured size limit. "
-        "Returns structured profile, verified links (GitHub, LinkedIn, web), "
-        "and flags if Gemini fallback was used for low-confidence formats."
+        "Returns structured profile and verified links. "
+        "Uses pypdf as primary parser with pdfplumber fallback for complex layouts."
     ),
 )
 async def upload_resume(file: UploadFile) -> UploadResponse:
@@ -112,10 +112,10 @@ async def upload_resume(file: UploadFile) -> UploadResponse:
         extracted_text_preview=parsed.extracted_text_preview,
         profile_summary=ps,
         verified_links=[_to_verified_link(l) for l in links],
-        used_gemini_fallback=parsed.used_gemini_fallback,
+        used_fallback_parser=parsed.used_fallback_parser,
         resume_quality=compute_resume_quality(parsed.full_text) if parsed.full_text else {},
         contact_confidence=conf,
-        message="Resume parsed, profiled and links verified successfully.",
+        message="Resume parsed and profiled successfully.",
     )
 
 
