@@ -695,7 +695,7 @@ const isRealDbRecord = (app: ApplicationRecord) =>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>{cards.length}</span>
                   </div>
                   {/* Table */}
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto" data-lenis-prevent>
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-white/10" style={{background:"rgba(255,255,255,0.03)"}}>

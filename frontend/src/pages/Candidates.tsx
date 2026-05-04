@@ -107,7 +107,7 @@ export default function Candidates() {
           </div>
         ) : (
           <div className="glass rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" data-lenis-prevent>
               <table className="min-w-full divide-y divide-black/8">
                 <thead style={{ background: "rgba(0,0,0,0.03)" }}>
                   <tr>
