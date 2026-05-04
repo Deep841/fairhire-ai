@@ -122,7 +122,7 @@ export default function Dashboard() {
               <span className="text-xs text-slate-500">{applications.length} total applicants</span>
             </div>
             <div className="flex gap-2">
-              <Link to="/process-resumes" className="btn-glass px-4 py-2 rounded-xl text-sm font-semibold">Upload Resumes</Link>
+              <Link to="/process-resumes" className="btn-glass-dark inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: '#fff' }}>Upload Resumes</Link>
               <button onClick={load} disabled={loading} className="btn-glass px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin inline" /> : "Refresh"}
               </button>
@@ -243,12 +243,15 @@ export default function Dashboard() {
                 { to: "/pipeline",        label: "Manage Pipeline", desc: "Shortlist, test, interview" },
                 { to: "/interviews",      label: "View Interviews", desc: "Scheduled & completed"      },
               ].map(({ to, label, desc }) => (
-                <Link key={to} to={to} className="glass rounded-2xl p-5 flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors group">
+                <Link key={to} to={to}
+                  className="btn-glass-dark inline-flex items-center justify-between gap-4 px-5 py-4 rounded-2xl group"
+                  style={{ color: '#fff' }}
+                >
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900">{label}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
+                    <p className="text-sm font-semibold" style={{ color: '#fff' }}>{label}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>{desc}</p>
                   </div>
-                  <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-slate-700 flex-shrink-0" />
+                  <ArrowRight className="h-4 w-4 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.7)' }} />
                 </Link>
               ))}
             </div>
