@@ -9,8 +9,8 @@ import {
 } from "react";
 import axios from "axios";
 
-const TOKEN_KEY = "fairhire_token";
-const USER_KEY = "fairhire_user";
+const TOKEN_KEY = "quantumlogic_token";
+const USER_KEY = "quantumlogic_user";
 
 export interface AuthUser {
   user_id: string;

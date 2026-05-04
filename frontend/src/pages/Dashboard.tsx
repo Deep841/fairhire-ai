@@ -61,7 +61,7 @@ export default function Dashboard() {
       <Layout>
         <div className="max-w-md mx-auto mt-16">
           <div className="glass rounded-2xl p-10 text-center">
-            <h1 className="text-xl font-bold text-slate-900">Welcome to FairHire AI</h1>
+            <h1 className="text-xl font-bold text-slate-900">Welcome to QuantumLogic Labs</h1>
             <p className="mt-2 text-sm text-slate-500 leading-relaxed">Start by creating a job requisition. Then upload resumes and let AI rank your candidates automatically.</p>
             <Link to="/jobs" className="btn-glass-dark mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold" style={{ color: '#fff' }}>
               Create your first job <ArrowRight className="h-4 w-4" />

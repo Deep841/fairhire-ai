@@ -139,8 +139,8 @@ export default function ProcessResumes() {
         const displayName = profile.full_name || displayNameFromFilename(upload.filename || file.name);
         // Build a stable fallback email — deterministic from filename+size so same file always maps to same candidate
         const fallbackEmail = profile.phone
-          ? `${profile.phone.replace(/\D/g, "")}@fairhire.local`
-          : `${file.name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30)}${file.size}@fairhire.local`;
+          ? `${profile.phone.replace(/\D/g, "")}@quantumlogic.local`
+          : `${file.name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30)}${file.size}@quantumlogic.local`;
         const email = profile.email || fallbackEmail;
         setCurrentStep(`Scoring ${displayName}…`);
         const { data: match } = await matchService.matchJd({ job_description: jobDescription.trim(), candidate_profile: { skills: profile.skills ?? [], education: profile.education ?? [], certifications: profile.certifications ?? [], experience_years: profile.experience_years ?? null, resume_text: upload.extracted_text_preview } });
@@ -392,7 +392,7 @@ export default function ProcessResumes() {
                       {r.status === "error" && <span className="text-xs text-red-400">{r.error}</span>}
                     </div>
                     <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-slate-400">
-                      {r.email && r.email.includes("@") && !r.email.includes("fairhire.local") && <span>📧 {r.email}</span>}
+                      {r.email && r.email.includes("@") && !r.email.includes("quantumlogic.local") && <span>📧 {r.email}</span>}
                       {r.phone && <span>📞 {r.phone}</span>}
                     </div>
                     {r.links.length > 0 && (

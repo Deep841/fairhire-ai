@@ -46,7 +46,7 @@ function PublishPanel({ job, onDone }: { job: JobRecord; onDone: () => void }) {
     if (selected.size === 0) return;
     setPublishing(true); setResults([]);
     try {
-      const token = localStorage.getItem("fairhire_token");
+      const token = localStorage.getItem("quantumlogic_token");
       const resp = await fetch(`${api_base}/jobs/${job.id}/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },

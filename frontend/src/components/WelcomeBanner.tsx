@@ -67,7 +67,7 @@ export default function WelcomeBanner() {
       </button>
 
       <div className="mb-4">
-        <h2 className="text-base font-bold text-white">👋 Welcome to FairHire AI</h2>
+        <h2 className="text-base font-bold text-white">👋 Welcome to QuantumLogic Labs</h2>
         <p className="text-sm text-slate-400 mt-0.5">
           Follow these 4 steps to start hiring smarter.
         </p>

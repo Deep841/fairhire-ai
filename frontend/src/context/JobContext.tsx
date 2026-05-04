@@ -16,7 +16,7 @@ export interface Job {
   description: string | null;
 }
 
-const STORAGE_KEY = "fairhire_active_job_id";
+const STORAGE_KEY = "quantumlogic_active_job_id";
 
 interface JobContextValue {
   jobs: Job[];

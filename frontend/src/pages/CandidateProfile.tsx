@@ -66,7 +66,7 @@ function OfferDraftModal({ app, onClose, onSent }: {
   useEffect(() => {
     applicationService.getOfferDraft(app.id)
       .then(({ data }) => setDraft(data.draft))
-      .catch(() => setDraft(`Dear ${app.candidate_name},\n\nCongratulations! We are pleased to offer you this position.\n\nBest regards,\nFairHire AI Recruitment Team`))
+      .catch(() => setDraft(`Dear ${app.candidate_name},\n\nCongratulations! We are pleased to offer you this position.\n\nBest regards,\nQuantumLogic Labs Recruitment Team`))
       .finally(() => setLoading(false));
   }, [app.id]);
 

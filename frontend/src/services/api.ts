@@ -4,7 +4,7 @@ const api = axios.create({ baseURL: "/api/v1" });
 
 // Inject JWT on every request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("fairhire_token");
+  const token = localStorage.getItem("quantumlogic_token");
   if (token) {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
@@ -17,8 +17,8 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (axios.isAxiosError(err) && err.response?.status === 401) {
-      localStorage.removeItem("fairhire_token");
-      localStorage.removeItem("fairhire_user");
+      localStorage.removeItem("quantumlogic_token");
+      localStorage.removeItem("quantumlogic_user");
       window.location.href = "/login";
     }
     return Promise.reject(err);
