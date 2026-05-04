@@ -250,6 +250,7 @@ export default function ProcessResumes() {
           {/* Type mode */}
           {jdMode === "type" && (
             <textarea
+              data-lenis-prevent
               id={inputId} value={jobDescription}
               onChange={(e) => { setJobDescription(e.target.value); setJdSource("manual"); setJdFileName(null); }}
               rows={6} placeholder="Paste the full job description here…" disabled={isRunning}
@@ -294,7 +295,9 @@ export default function ProcessResumes() {
               )}
               {/* Preview loaded text */}
               {jdFileName && jobDescription && (
-                <textarea value={jobDescription}
+                <textarea
+                  data-lenis-prevent
+                  value={jobDescription}
                   onChange={(e) => { setJobDescription(e.target.value); setJdSource("manual"); }}
                   rows={5} disabled={isRunning}
                   className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 resize-y disabled:opacity-60"
