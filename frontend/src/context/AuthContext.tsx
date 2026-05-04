@@ -12,6 +12,11 @@ import axios from "axios";
 const TOKEN_KEY = "quantumlogic_token";
 const USER_KEY = "quantumlogic_user";
 
+// One-time migration: clear stale keys from old FairHire branding
+["fairhire_token", "fairhire_user", "fairhire_active_job_id"].forEach(
+  (k) => localStorage.removeItem(k)
+);
+
 export interface AuthUser {
   user_id: string;
   email: string;
