@@ -63,4 +63,47 @@
     width: 100%;
     max-width: 1280px;
   }
-}
+
+  .glass-navbar {
+    background: rgba(10, 22, 40, 0.75);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+  }
+
+  .btn-glass {
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .btn-glass:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .btn-glass:active:not(:disabled) { transform: scale(0.97); }
+  .btn-glass:disabled { opacity: 0.40; pointer-events: none; }
+
+  .btn-glass-dark {
+    position: relative;
+    overflow: hidden;
+    background: #10b981;
+    border: none;
+    color: #ffffff !important;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .btn-glass-dark:hover:not(:disabled) { background: #059669; }
+  .btn-glass-dark:active:not(:disabled) { transform: scale(0.97); }
+  .btn-glass-dark:disabled { opacity: 0.40; pointer-events: none; }
+  .btn-glass-dark * { color: #ffffff !important; }
+
+  /* hide scrollbar but keep scroll */
+  .chat-messages::-webkit-scrollbar { display: none; }

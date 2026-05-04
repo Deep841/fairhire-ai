@@ -6,7 +6,7 @@ import Layout from "../components/Layout";
 import { useJobs } from "../context/JobContext";
 import { uploadService, matchService, applicationService, candidateService } from "../services/api";
 import { getApiErrorMessage } from "../utils/apiError";
-import { displayNameFromFilename, makeCandidateId } from "../utils/resumeFilename";
+import { displayNameFromFilename } from "../utils/resumeFilename";
 
 const ACCEPT_EXT = /\.(pdf|docx?)$/i;
 const ACCEPT_MIME = new Set(["application/pdf","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document"]);
@@ -150,7 +150,7 @@ export default function ProcessResumes() {
         const { data: c } = await candidateService.create({ full_name: displayName, email, phone: profile.phone ?? null, resume_text: upload.full_text || upload.extracted_text_preview || null });
         candidateId = c.id;
         // application_service also upserts — re-uploading updates score, never duplicates
-        await applicationService.create({ job_id: activeJob.id, candidate_id: candidateId, resume_score: match.fit_score, matched_skills: match.matched_skills, missing_skills: match.missing_skills, score_components: match.score_components, resume_quality_score: upload.resume_quality?.score ?? null });
+        await applicationService.create({ job_id: activeJob.id, candidate_id: candidateId, resume_score: match.fit_score, matched_skills: match.matched_skills, missing_skills: match.missing_skills });
         processed.push({ name: displayName, email, phone: profile.phone ?? null, fitScore: match.fit_score, matchedSkills: match.matched_skills, missingSkills: match.missing_skills, links: upload.verified_links ?? [], status: "saved" });
       } catch (e) {
         processed.push({ name: file.name, email: "", phone: null, fitScore: 0, matchedSkills: [], missingSkills: [], links: [], status: "error", error: getApiErrorMessage(e, "Processing failed") });
@@ -168,7 +168,7 @@ export default function ProcessResumes() {
             <div className="bg-emerald-500/20 rounded-2xl p-4 inline-flex mb-5"><Briefcase className="h-10 w-10 text-emerald-400" /></div>
             <h1 className="text-xl font-bold text-white">No job created yet</h1>
             <p className="mt-2 text-sm text-slate-400">Create a job first, then come back to upload resumes.</p>
-            <Link to="/jobs" className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
+            <Link to="/jobs" className="btn-glass-dark mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold" style={{ color: '#fff' }}>
               Create a job <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -191,7 +191,7 @@ export default function ProcessResumes() {
               <h1 className="text-2xl font-bold text-white">Process Resumes</h1>
               <p className="mt-1 text-sm text-slate-400">Upload resumes → AI parses & scores each one → saved directly to Pipeline</p>
               {activeJob && (
-                <span className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold text-emerald-300">
+                <span className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: '#f1f5f9', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.09), 0px 0px 1px rgba(0,0,0,0.2)', color: '#475569' }}>
                   <Briefcase className="h-3 w-3" /> {activeJob.title}
                 </span>
               )}
@@ -211,7 +211,7 @@ export default function ProcessResumes() {
           {/* Header row */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="h-6 w-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+              <span className="h-6 w-6 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0" style={{ background: '#131313', color: '#fff', boxShadow: 'inset 0 0 12px rgba(255,255,255,1), 0px 0px 2px rgba(0,0,0,0.1)' }}>1</span>
               <span className="text-sm font-semibold text-white">Job Description</span>
               {jdSource === "auto" && <span className="text-xs text-emerald-400 font-medium">✓ Auto-filled from job</span>}
               {jdSource === "file" && <span className="text-xs text-sky-400 font-medium">✓ Loaded from {jdFileName}</span>}
@@ -222,16 +222,18 @@ export default function ProcessResumes() {
               <div className="flex rounded-lg border border-white/10 overflow-hidden">
                 <button type="button"
                   onClick={() => setJdMode("type")}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    jdMode === "type" ? "bg-emerald-600 text-white" : "text-slate-400 hover:bg-white/10"
-                  }`}>
+                  className={`btn-glass inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold ${
+                    jdMode === "type" ? "btn-glass-dark" : ""
+                  }`}
+                  style={jdMode === "type" ? { color: '#fff' } : undefined}>
                   <PenLine className="h-3 w-3" /> Type
                 </button>
                 <button type="button"
                   onClick={() => setJdMode("upload")}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    jdMode === "upload" ? "bg-emerald-600 text-white" : "text-slate-400 hover:bg-white/10"
-                  }`}>
+                  className={`btn-glass inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold ${
+                    jdMode === "upload" ? "btn-glass-dark" : ""
+                  }`}
+                  style={jdMode === "upload" ? { color: '#fff' } : undefined}>
                   <FileUp className="h-3 w-3" /> Upload
                 </button>
               </div>
@@ -305,7 +307,7 @@ export default function ProcessResumes() {
         {/* Step 2: Upload Resumes */}
         <div className="glass rounded-2xl shadow-card p-6 space-y-4">
           <div className="flex items-center gap-2 mb-1">
-            <span className="h-6 w-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
+            <span className="h-6 w-6 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0" style={{ background: '#131313', color: '#fff', boxShadow: 'inset 0 0 12px rgba(255,255,255,1), 0px 0px 2px rgba(0,0,0,0.1)' }}>2</span>
             <span className="text-sm font-semibold text-white">Upload Resumes</span>
             <span className="text-xs text-slate-500">PDF, DOC, DOCX</span>
           </div>
@@ -414,22 +416,22 @@ export default function ProcessResumes() {
         )}
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 pb-8">
+        <div className="flex flex-col sm:flex-row gap-3 pb-8 justify-center">
           {!done ? (
             <button type="button" onClick={runPipeline}
               disabled={isRunning || files.length === 0 || jobDescription.trim().length < 10 || !activeJob}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-glow transition-colors">
+              className="btn-glass-dark inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
               {isRunning ? <><Loader2 className="h-4 w-4 animate-spin" /> Processing…</> : <><UploadCloud className="h-4 w-4" /> Run Pipeline</>}
             </button>
           ) : (
             <button type="button" onClick={() => navigate("/pipeline")}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 shadow-glow">
+              className="btn-glass-dark inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full text-sm font-semibold">
               <ArrowRight className="h-4 w-4" /> View Pipeline →
             </button>
           )}
           {done && (
             <button type="button" onClick={() => { setFiles([]); setResults([]); setDone(false); }}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">
+              className="btn-glass inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full text-sm font-semibold">
               Process More Resumes
             </button>
           )}

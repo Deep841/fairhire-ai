@@ -81,7 +81,7 @@ function PublishPanel({ job, onDone }: { job: JobRecord; onDone: () => void }) {
         ))}
       </div>
       <button type="button" onClick={handlePublish} disabled={publishing || selected.size === 0}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
+        className="btn-glass-dark inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50" style={{ color: '#fff' }}>
         {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
         {publishing ? "Publishing…" : "Publish selected"}
       </button>
@@ -169,7 +169,7 @@ export default function Jobs() {
               </div>
             </div>
             <button type="button" onClick={() => setShowForm((s) => !s)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
+              className="btn-glass-dark inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: '#fff' }}>
               <Plus className="h-4 w-4" /> New job
             </button>
           </div>
@@ -197,12 +197,12 @@ export default function Jobs() {
               {error && <div className="p-3 rounded-xl bg-red-500/20 border border-red-500/30 text-sm text-red-300">{error}</div>}
               <div className="flex gap-3">
                 <button type="submit" disabled={saving || !title.trim()}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
+                  className="btn-glass-dark inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50" style={{ color: '#fff' }}>
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   {saving ? "Creating…" : "Create & activate"}
                 </button>
                 <button type="button" onClick={() => setShowForm(false)}
-                  className="px-5 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">
+                  className="btn-glass px-5 py-2.5 rounded-xl text-sm font-semibold">
                   Cancel
                 </button>
               </div>
@@ -218,7 +218,7 @@ export default function Jobs() {
             <Briefcase className="h-10 w-10 text-slate-500 mx-auto mb-4" />
             <p className="text-slate-400 mb-4">No job requisitions yet.</p>
             <button type="button" onClick={() => setShowForm(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
+              className="btn-glass-dark inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold" style={{ color: '#fff' }}>
               <Plus className="h-4 w-4" /> Create your first job
             </button>
           </div>
@@ -270,7 +270,7 @@ export default function Jobs() {
                           <Share2 className="h-3.5 w-3.5" />{isPublishing ? "Close" : "Publish"}
                         </button>
                         <Link to="/process-resumes" onClick={() => handleSelect(job.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">
+                          className="btn-glass-dark inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ color: '#fff' }}>
                           Upload Resumes <ArrowRight className="h-3.5 w-3.5" />
                         </Link>
                       </div>

@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  Users, Loader2, UserCircle, Send, Calendar,
-  XCircle, Award, RefreshCw, Edit3, CheckCircle2, ArrowRight, Mail, MailX, MailCheck, Trash2,
-} from "lucide-react";
+import { ArrowRight, Loader2, Users } from "lucide-react";
 import Layout from "../components/Layout";
 import { Link } from "react-router-dom";
 import { applicationService, interviewService, type ApplicationRecord } from "../services/api";
@@ -18,16 +15,13 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
     <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
       {toasts.map((t) => (
         <div key={t.id}
-          className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold animate-fade-in ${
+          className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold ${
             t.type === "success" ? "bg-emerald-600 text-white" :
             t.type === "error"   ? "bg-red-600 text-white" :
                                    "bg-slate-700 text-white"
           }`}>
-          {t.type === "success" ? <MailCheck className="h-4 w-4 flex-shrink-0" /> :
-           t.type === "error"   ? <MailX className="h-4 w-4 flex-shrink-0" /> :
-                                  <Mail className="h-4 w-4 flex-shrink-0" />}
           {t.message}
-          <button onClick={() => onDismiss(t.id)} className="ml-2 opacity-70 hover:opacity-100"><XCircle className="h-3.5 w-3.5" /></button>
+          <button onClick={() => onDismiss(t.id)} className="ml-2 opacity-70 hover:opacity-100">✕</button>
         </div>
       ))}
     </div>
@@ -75,10 +69,9 @@ function OfferDraftModal({
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div className="glass rounded-2xl shadow-card w-full max-w-lg p-6 space-y-4">
         <div className="flex items-center gap-2">
-          <Edit3 className="h-5 w-5 text-emerald-400" />
-          <h2 className="text-lg font-bold text-white">Offer Letter Draft</h2>
+          <h2 className="text-lg font-bold text-slate-900">Offer Letter Draft</h2>
         </div>
-        <p className="text-sm text-slate-400">AI-generated for <strong className="text-white">{app.candidate_name}</strong>. Edit before sending.</p>
+        <p className="text-sm text-slate-500">AI-generated for <strong className="text-slate-900">{app.candidate_name}</strong>. Edit before sending.</p>
         {loading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-emerald-400" /></div>
         ) : (
@@ -88,11 +81,10 @@ function OfferDraftModal({
         {error && <p className="text-sm text-red-300 bg-red-500/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
         <div className="flex gap-3 pt-2">
           <button onClick={handleSend} disabled={sending || loading}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            className="btn-glass-dark flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50" style={{ color: '#fff' }}>
             {sending ? "Sending offer…" : "Send offer email"}
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
         </div>
       </div>
     </div>
@@ -104,8 +96,10 @@ function OfferDraftModal({
 const STAGES = [
   { key: "applied",      label: "Applied",      color: "border-t-slate-400",  bg: "bg-slate-50"  },
   { key: "shortlisted",  label: "Shortlisted",  color: "border-t-cyan-400",   bg: "bg-cyan-50"   },
-  { key: "testing",      label: "Testing",      color: "border-t-sky-400",    bg: "bg-sky-50"    },
-  { key: "interviewing", label: "Interviewing", color: "border-t-amber-400",  bg: "bg-amber-50"  },
+  { key: "test_sent",    label: "Test Sent",    color: "border-t-sky-400",    bg: "bg-sky-50"    },
+  { key: "tested",       label: "Assessed",     color: "border-t-blue-400",   bg: "bg-blue-50"   },
+  { key: "interview_1",  label: "Round 1",      color: "border-t-amber-400",  bg: "bg-amber-50"  },
+  { key: "interview_2",  label: "Round 2",      color: "border-t-purple-400", bg: "bg-purple-50" },
   { key: "offered",      label: "Offered",      color: "border-t-green-400",  bg: "bg-green-50"  },
   { key: "rejected",     label: "Rejected",     color: "border-t-red-300",    bg: "bg-red-50"    },
 ] as const;
@@ -124,17 +118,15 @@ function RejectConfirmModal({ name, onConfirm, onClose, loading }: {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div className="glass rounded-2xl shadow-card w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="bg-red-500/20 rounded-full p-2"><XCircle className="h-5 w-5 text-red-400" /></div>
-          <h2 className="text-lg font-bold text-white">Reject Candidate?</h2>
+          <h2 className="text-lg font-bold text-slate-900">Reject Candidate?</h2>
         </div>
-        <p className="text-sm text-slate-400">A rejection email will be sent to <strong className="text-white">{name}</strong>. This cannot be undone.</p>
+        <p className="text-sm text-slate-500">A rejection email will be sent to <strong className="text-slate-900">{name}</strong>. This cannot be undone.</p>
         <div className="flex gap-3 pt-2">
           <button onClick={onConfirm} disabled={loading}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+            className="btn-glass px-4 py-2.5 rounded-xl flex-1 text-sm font-semibold border border-red-200 text-red-600 disabled:opacity-50">
             {loading ? "Rejecting…" : "Yes, reject & notify"}
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
         </div>
       </div>
     </div>
@@ -196,11 +188,10 @@ function TestScoreModal({
         {error && <p className="text-sm text-red-300 bg-red-500/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
         <div className="flex gap-3 pt-2">
           <button onClick={handleSave} disabled={saving || !score}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Award className="h-4 w-4" />}
+            className="btn-glass-dark flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50" style={{ color: '#fff' }}>
             {saving ? "Saving…" : "Save & re-rank"}
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
         </div>
       </div>
     </div>
@@ -257,11 +248,10 @@ function TestLinkModal({
         {error && <p className="text-sm text-red-300 bg-red-500/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
         <div className="flex gap-3 pt-2">
           <button onClick={handleSend} disabled={sending || !link.trim()}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            className="btn-glass-dark flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50" style={{ color: '#fff' }}>
             {sending ? "Sending…" : "Send link"}
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
         </div>
       </div>
     </div>
@@ -304,7 +294,7 @@ function ScheduleModal({
         interviewer_id: interviewerId.trim() || null,
         notes: notes || null,
       });
-      const { data: updatedApp } = await applicationService.advanceStage(app.id, "interviewing");
+      const { data: updatedApp } = await applicationService.advanceStage(app.id, "interview_1");
       onScheduled(updatedApp);
       onClose();
     } catch (e) {
@@ -351,18 +341,35 @@ function ScheduleModal({
         {error && <p className="text-sm text-red-300 bg-red-500/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
         <div className="flex gap-3 pt-2">
           <button onClick={handleSchedule} disabled={saving}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
+            className="btn-glass-dark flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50" style={{ color: '#fff' }}>
             {saving ? "Scheduling…" : "Schedule & notify"}
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Candidate card ────────────────────────────────────────────────────────────
+function SkillsCell({ skills }: { skills: string[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? skills : skills.slice(0, 3);
+  const extra = skills.length - 3;
+  const pillStyle = { background: '#f1f5f9', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.09), 0px 0px 1px rgba(0,0,0,0.2)' };
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {visible.map((s) => (
+        <span key={s} className="px-2.5 py-1 rounded-full text-xs font-medium text-slate-600" style={pillStyle}>{s}</span>
+      ))}
+      {!expanded && extra > 0 && (
+        <button onClick={() => setExpanded(true)} className="px-2 py-0.5 rounded-full text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">+{extra}</button>
+      )}
+      {expanded && extra > 0 && (
+        <button onClick={() => setExpanded(false)} className="px-2 py-0.5 rounded-full text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">less</button>
+      )}
+    </div>
+  );
+}
 
 function CandidateCard({
   app,
@@ -400,20 +407,15 @@ function CandidateCard({
       {/* Score */}
       <td className="px-3 py-3 w-16 text-center">
         {score !== null ? (
-          <span className={`text-xs font-bold px-2 py-1 rounded-lg border ${scoreColor(score)}`}>
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full text-slate-700" style={{ background: '#f1f5f9', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.09), 0px 0px 1px rgba(0,0,0,0.2)' }}>
             {score.toFixed(0)}%
           </span>
         ) : <span className="text-slate-600 text-xs">—</span>}
       </td>
 
       {/* Skills */}
-      <td className="px-3 py-3 min-w-[140px]">
-        <div className="flex flex-wrap gap-1">
-          {app.matched_skills.slice(0, 3).map((s) => (
-            <span key={s} className="px-1.5 py-0.5 rounded text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">{s}</span>
-          ))}
-          {app.matched_skills.length > 3 && <span className="text-xs text-slate-500">+{app.matched_skills.length - 3}</span>}
-        </div>
+      <td className="px-3 py-3 min-w-[140px] align-middle">
+        <SkillsCell skills={app.matched_skills} />
       </td>
 
       {/* Actions */}
@@ -421,43 +423,43 @@ function CandidateCard({
         <div className="flex flex-wrap gap-1.5">
           {app.stage === "applied" && (
             <button onClick={() => onAction("shortlist", app)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/30">
-              <CheckCircle2 className="h-3 w-3" /> Shortlist
+              className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: '#131313', color: '#fff', boxShadow: 'inset 0 0 12px rgba(255,255,255,1), 0px 0px 2px rgba(0,0,0,0.1)' }}>
+              Shortlist
             </button>
           )}
           {(app.stage === "applied" || app.stage === "shortlisted") && (
             <button onClick={() => onAction("test", app)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:bg-white/15">
-              <Send className="h-3 w-3" /> Send Test
+              className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: '#131313', color: '#fff', boxShadow: 'inset 0 0 12px rgba(255,255,255,1), 0px 0px 2px rgba(0,0,0,0.1)' }}>
+              Send Test
             </button>
           )}
-          {app.stage === "testing" && (
+          {app.stage === "test_sent" && (
             <button onClick={() => onAction("testscore", app)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:bg-white/15">
-              <Award className="h-3 w-3" /> Enter Score
+              className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: '#f1f5f9', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.09), 0px 0px 1px rgba(0,0,0,0.2)', color: '#475569' }}>
+              Enter Score
             </button>
           )}
-          {(app.stage === "shortlisted" || app.stage === "testing") && (
+          {(app.stage === "shortlisted" || app.stage === "test_sent" || app.stage === "tested") && (
             <button onClick={() => onAction("interview", app)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30 text-xs font-semibold text-amber-300 hover:bg-amber-500/30">
-              <Calendar className="h-3 w-3" /> Interview
+              className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: '#131313', color: '#fff', boxShadow: 'inset 0 0 12px rgba(255,255,255,1), 0px 0px 2px rgba(0,0,0,0.1)' }}>
+              Interview
             </button>
           )}
-          {app.stage === "interviewing" && (
+          {(app.stage === "interview_1" || app.stage === "interview_2") && (
             <button onClick={() => onAction("offer", app)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30">
-              <Award className="h-3 w-3" /> Offer
+              className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: '#131313', color: '#fff', boxShadow: 'inset 0 0 12px rgba(255,255,255,1), 0px 0px 2px rgba(0,0,0,0.1)' }}>
+              Offer
             </button>
           )}
           {app.stage !== "rejected" && app.stage !== "offered" && (
             <button onClick={() => onAction("reject", app)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-xs font-semibold text-red-400 hover:bg-red-500/30">
-              <XCircle className="h-3 w-3" /> Reject
+              className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: '#f1f5f9', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.09), 0px 0px 1px rgba(0,0,0,0.2)', color: '#dc2626' }}>
+              Reject
             </button>
           )}
           <button onClick={() => onAction("delete", app)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-semibold text-slate-500 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30">
-            <Trash2 className="h-3 w-3" /> Delete
+            className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: '#f1f5f9', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.09), 0px 0px 1px rgba(0,0,0,0.2)', color: '#94a3b8' }}>
+            Delete
           </button>
         </div>
       </td>
@@ -497,9 +499,7 @@ export default function Pipeline() {
     else if (data.email_status === "failed") addToast(`${actionLabel} saved but email failed to send`, "error");
   };
 
-  const [actionLoading, setActionLoading] = useState<string | null>(null); // tracks which app_id is loading
-
-  const isRealDbRecord = (app: ApplicationRecord) =>
+const isRealDbRecord = (app: ApplicationRecord) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(app.id);
 
   const load = useCallback(async () => {
@@ -525,7 +525,7 @@ export default function Pipeline() {
     if (action === "shortlist") {
       if (!isRealDbRecord(app)) { setError("Cannot shortlist — re-run pipeline to persist candidates."); return; }
       try {
-        const { data } = await applicationService.shortlistOne(app.id);
+        const { data } = await applicationService.shortlist(app.id);
         setApplications((prev) => prev.map((a) => a.id === data.id ? data : a));
         addToast(`${app.candidate_name} moved to Shortlisted`, "success");
       } catch (e) { setError(getApiErrorMessage(e, "Action failed")); }
@@ -626,8 +626,8 @@ export default function Pipeline() {
       <Layout>
         <div className="max-w-md mx-auto text-center py-16">
           <Users className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-white">No active job</h1>
-          <p className="mt-2 text-slate-400">Select a job from the sidebar to view its pipeline.</p>
+          <h1 className="text-xl font-bold text-slate-900">No active job</h1>
+          <p className="mt-2 text-slate-500">Select a job from the navbar to view its pipeline.</p>
         </div>
       </Layout>
     );
@@ -644,8 +644,8 @@ export default function Pipeline() {
               <p className="mt-1 text-sm text-slate-400">{activeJob.title} · {applications.length} applicants</p>
             </div>
             <button onClick={load} disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/10 disabled:opacity-50">
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+              className="btn-glass px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin inline" /> : "Refresh"}
             </button>
           </div>
         </div>
@@ -657,19 +657,16 @@ export default function Pipeline() {
           <div className="glass rounded-2xl shadow-card px-5 py-3 flex items-center gap-4 flex-wrap">
             <span className="text-sm font-semibold text-emerald-300">{selected.size} selected</span>
             <button onClick={bulkShortlist} disabled={bulkLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-semibold hover:bg-cyan-700 disabled:opacity-50">
-              {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-              Shortlist all
+              className="btn-glass-dark px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50" style={{ color: '#fff' }}>
+              {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin inline" /> : "Shortlist all"}
             </button>
             <button onClick={bulkReject} disabled={bulkLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-50">
-              {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
-              Reject all
+              className="btn-glass px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 text-red-600 disabled:opacity-50">
+              {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin inline" /> : "Reject all"}
             </button>
             <button onClick={bulkDelete} disabled={bulkLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs font-semibold hover:bg-slate-600 disabled:opacity-50">
-              {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-              Delete all
+              className="btn-glass px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50">
+              {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin inline" /> : "Delete all"}
             </button>
             <button onClick={() => setSelected(new Set())}
               className="ml-auto text-xs text-emerald-400 hover:underline font-medium">Clear</button>
@@ -680,10 +677,8 @@ export default function Pipeline() {
           <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 text-emerald-400 animate-spin" /></div>
         ) : !loading && applications.length === 0 ? (
           <div className="glass rounded-2xl shadow-card p-10 text-center">
-            <Users className="h-10 w-10 text-slate-500 mx-auto mb-4" />
-            <p className="text-slate-400 mb-4">No applications yet for <strong className="text-white">{activeJob.title}</strong>.</p>
-            <Link to="/process-resumes"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
+            <p className="text-slate-500 mb-4">No applications yet for <strong className="text-slate-900">{activeJob.title}</strong>.</p>
+            <Link to="/process-resumes" className="btn-glass-dark inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold" style={{ color: '#fff' }}>
               Process Resumes <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -695,9 +690,9 @@ export default function Pipeline() {
               return (
                 <div key={key} className="glass rounded-2xl shadow-card overflow-hidden">
                   {/* Stage header */}
-                  <div className={`px-5 py-3 flex items-center gap-3 border-l-4 ${color}`} style={{background:"rgba(255,255,255,0.04)"}}>
-                    <span className="text-sm font-bold text-white">{label}</span>
-                    <span className="text-xs font-bold bg-white/10 text-slate-300 px-2 py-0.5 rounded-full">{cards.length}</span>
+                  <div className="px-5 py-3 flex items-center gap-3" style={{ background: '#131313' }}>
+                    <span className="text-sm font-bold" style={{ color: '#fff' }}>{label}</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>{cards.length}</span>
                   </div>
                   {/* Table */}
                   <div className="overflow-x-auto">
@@ -728,9 +723,9 @@ export default function Pipeline() {
                 {STAGES.map(({ key, label, color }) => {
                   const count = byStage(key).length;
                   return (
-                    <div key={key} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border-l-2 ${color} bg-white/5`}>
-                      <span className="text-xs text-slate-400">{label}</span>
-                      <span className={`text-xs font-bold ${count > 0 ? "text-white" : "text-slate-600"}`}>{count}</span>
+                    <div key={key} className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: '#131313', boxShadow: 'inset 0 0 12px rgba(255,255,255,1), 0px 0px 2px rgba(0,0,0,0.1)' }}>
+                      <span className="text-xs" style={{ color: '#fff' }}>{label}</span>
+                      <span className={`text-xs font-bold ${count > 0 ? "" : "opacity-40"}`} style={{ color: '#fff' }}>{count}</span>
                     </div>
                   );
                 })}

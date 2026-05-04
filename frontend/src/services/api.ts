@@ -38,15 +38,13 @@ export const jobService = {
 };
 
 export const applicationService = {
-  list: (jobId: string, stage?: string) => api.get<ApplicationRecord[]>(`/applications/?job_id=${jobId}${stage ? `&stage=${stage}` : ""}`),
+  list: (jobId: string) => api.get<ApplicationRecord[]>(`/applications/?job_id=${jobId}`),
   listByCandidate: (candidateId: string) => api.get<ApplicationRecord[]>(`/applications/by-candidate/${candidateId}`),
-  shortlist: (jobId: string, minScore?: number) => api.get<ApplicationRecord[]>(`/applications/shortlist?job_id=${jobId}${minScore !== undefined ? `&min_score=${minScore}` : ""}`),
-  exportCsv: (jobId: string) => api.get(`/applications/export?job_id=${jobId}`, { responseType: "blob" }),
   get: (id: string) => api.get<ApplicationRecord>(`/applications/${id}`),
   create: (data: unknown) => api.post<ApplicationRecord>("/applications/", data),
-  advanceStage: (id: string, stage: string, rejection_reason?: string) =>
-    api.patch<ApplicationRecord>(`/applications/${id}/stage`, { stage, rejection_reason }),
-  shortlistOne: (id: string) =>
+  advanceStage: (id: string, stage: string) =>
+    api.patch<ApplicationRecord>(`/applications/${id}/stage`, { stage }),
+  shortlist: (id: string) =>
     api.patch<ApplicationRecord>(`/applications/${id}/stage`, { stage: "shortlisted" }),
   recordTestScore: (id: string, test_score: number) =>
     api.post<ApplicationRecord>(`/applications/${id}/test-score`, { test_score }),
@@ -56,7 +54,7 @@ export const applicationService = {
     api.patch<ApplicationRecord>(`/applications/${id}/weights`, { resume_weight, test_weight }),
   getOfferDraft: (id: string) =>
     api.get<{ draft: string; candidate_name: string; job_title: string }>(`/applications/${id}/offer-draft`),
-  reject: (id: string, rejection_reason?: string) => api.post<ApplicationRecord>(`/applications/${id}/reject`, { rejection_reason }),
+  reject: (id: string) => api.post<ApplicationRecord>(`/applications/${id}/reject`),
   offer: (id: string, draft: string) => api.post<ApplicationRecord>(`/applications/${id}/offer`, { draft }),
   delete: (id: string) => api.delete(`/applications/${id}`),
 };
@@ -124,15 +122,8 @@ export interface ApplicationRecord {
   interview_score: number | null;
   hr_interview_score: number | null;
   final_score: number | null;
-  score_impact: number | null;
-  score_semantic: number | null;
-  score_skill: number | null;
-  score_cert: number | null;
-  score_experience: number | null;
-  resume_quality_score: number | null;
   stage: string;
   status: string;
-  rejection_reason: string | null;
   matched_skills: string[];
   missing_skills: string[];
   applied_at: string;
@@ -184,9 +175,7 @@ export interface UploadResponse {
   extracted_text_preview: string;
   profile_summary: ProfileSummary | null;
   verified_links: VerifiedLink[];
-  used_fallback_parser: boolean;
-  resume_quality: Record<string, number>;
-  contact_confidence: number;
+  used_gemini_fallback: boolean;
   message: string;
 }
 
@@ -211,11 +200,9 @@ export interface MatchResponse {
   skill_overlap_score: number;
   education_relevance_score: number;
   experience_relevance_score: number;
-  certification_score: number;
   semantic_similarity_score: number;
   impact_score: number;
   impact_highlights: string[];
-  score_components: Record<string, number>;
   explanation: Record<string, string>;
 }
 

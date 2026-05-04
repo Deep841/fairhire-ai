@@ -26,28 +26,27 @@ function ScorePill({ label, value, color }: { label: string; value: number | nul
 
 function stageBadgeColor(stage: string) {
   const map: Record<string, string> = {
-    applied: "bg-slate-100 text-slate-700",
-    shortlisted: "bg-cyan-100 text-cyan-800",
-    test_sent: "bg-sky-100 text-sky-800",
-    tested: "bg-blue-100 text-blue-800",
-    interview_1: "bg-amber-100 text-amber-800",
-    interview_2: "bg-purple-100 text-purple-800",
-    offered: "bg-green-100 text-green-800",
-    rejected: "bg-red-100 text-red-700",
+    applied:      "bg-slate-100 text-slate-700",
+    shortlisted:  "bg-cyan-100 text-cyan-800",
+    test_sent:    "bg-sky-100 text-sky-800",
+    tested:       "bg-blue-100 text-blue-800",
+    interview_1:  "bg-amber-100 text-amber-800",
+    interview_2:  "bg-purple-100 text-purple-800",
+    offered:      "bg-green-100 text-green-800",
+    rejected:     "bg-red-100 text-red-700",
+    testing:      "bg-sky-100 text-sky-800",
+    interviewing: "bg-amber-100 text-amber-800",
   };
   return map[stage] ?? "bg-gray-100 text-gray-700";
 }
 
 function stageLabel(stage: string) {
   const map: Record<string, string> = {
-    applied: "Applied",
-    shortlisted: "Shortlisted",
-    test_sent: "Test Sent",
-    tested: "Assessment Done",
-    interview_1: "Round 1 Interview",
-    interview_2: "Round 2 Interview",
-    offered: "Offered",
-    rejected: "Rejected",
+    applied: "Applied", shortlisted: "Shortlisted",
+    test_sent: "Test Sent", tested: "Assessment Done",
+    interview_1: "Round 1 Interview", interview_2: "Round 2 Interview",
+    offered: "Offered", rejected: "Rejected",
+    testing: "Test Sent", interviewing: "Interviewing",
   };
   return map[stage] ?? stage;
 }
@@ -219,7 +218,7 @@ export default function CandidateProfile() {
 
   return (
     <Layout>
-      <div className="max-w-4xl space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
 
         {/* Back */}
         <button onClick={() => navigate(-1)}
@@ -266,7 +265,7 @@ export default function CandidateProfile() {
                     <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Application</p>
                     <p className="text-sm font-semibold text-white mt-0.5">Applied {new Date(app.applied_at).toLocaleDateString(undefined, { dateStyle: "medium" })}</p>
                   </div>
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full ${stageBadgeColor(app.stage)}`}>{stageLabel(app.stage)}</span>
+                  <span className="text-xs font-medium px-3 py-1 rounded-full" style={app.stage === 'rejected' ? { background: '#f1f5f9', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.09), 0px 0px 1px rgba(0,0,0,0.2)', color: '#94a3b8' } : { background: '#131313', boxShadow: 'inset 0 0 12px rgba(255,255,255,1), 0px 0px 2px rgba(0,0,0,0.1)', color: '#fff' }}>{stageLabel(app.stage)}</span>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -295,7 +294,7 @@ export default function CandidateProfile() {
                           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Matched Skills</p>
                           <div className="flex flex-wrap gap-1.5">
                             {app.matched_skills.map((s) => (
-                              <span key={s} className="px-2 py-0.5 rounded-md text-xs bg-green-50 text-green-700 border border-green-200">{s}</span>
+                              <span key={s} className="text-xs font-medium px-2.5 py-1 rounded-full text-slate-600" style={{ background: '#f1f5f9', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.09), 0px 0px 1px rgba(0,0,0,0.2)' }}>{s}</span>
                             ))}
                           </div>
                         </div>
@@ -305,7 +304,7 @@ export default function CandidateProfile() {
                           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Missing Skills</p>
                           <div className="flex flex-wrap gap-1.5">
                             {app.missing_skills.map((s) => (
-                              <span key={s} className="px-2 py-0.5 rounded-md text-xs bg-red-50 text-red-600 border border-red-200">{s}</span>
+                              <span key={s} className="text-xs font-medium px-2.5 py-1 rounded-full text-slate-500" style={{ background: '#f1f5f9', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.09), 0px 0px 1px rgba(0,0,0,0.2)' }}>{s}</span>
                             ))}
                           </div>
                         </div>
@@ -348,7 +347,7 @@ export default function CandidateProfile() {
                   {/* Actions */}
                   {app.stage !== "rejected" && app.stage !== "offered" && (
                     <div className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
-                      {(app.stage === "interview_1" || app.stage === "interview_2") && (
+                      {(app.stage === "interview_1" || app.stage === "interview_2" || app.stage === "interviewing") && (
                         <button onClick={() => setOfferModal(app)}
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700">
                           <CheckCircle2 className="h-4 w-4" /> Send Offer

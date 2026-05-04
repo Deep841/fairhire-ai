@@ -1,7 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { Trophy, Medal, Award, LayoutList, CalendarPlus } from "lucide-react";
-import { usePipeline, getWorkflowStatus } from "../context/PipelineContext";
-import type { LeaderboardCandidate } from "../services/api";
 
 interface Candidate {
   id: string;
@@ -17,21 +15,9 @@ interface TopCandidatesProps {
 
 export default function TopCandidates({ candidates }: TopCandidatesProps) {
   const navigate = useNavigate();
-  const { session, updateWorkflowStatus } = usePipeline();
 
   const handleProceedInterview = (candidate: Candidate) => {
-    const row: LeaderboardCandidate = {
-      id: candidate.id,
-      name: candidate.name,
-      fitScore: candidate.fitScore,
-      matchedSkills: candidate.matchedSkills,
-      recommendation: candidate.recommendation,
-    };
-    const wf = session ? getWorkflowStatus(session, candidate.id) : "matched";
-    if (wf === "matched") {
-      updateWorkflowStatus(candidate.id, "shortlisted");
-    }
-    navigate("/interviews", { state: { candidate: row } });
+    navigate("/pipeline");
   };
 
   const getRankIcon = (index: number) => {
@@ -73,12 +59,7 @@ export default function TopCandidates({ candidates }: TopCandidatesProps) {
     return "bg-red-100 text-red-800 border border-red-200";
   };
 
-  const workflowButtonLabel = (candidateId: string) => {
-    const wf = session ? getWorkflowStatus(session, candidateId) : "matched";
-    if (wf === "interview_scheduled") return "View schedule";
-    if (wf === "shortlisted") return "Continue scheduling";
-    return "Proceed to Interview";
-  };
+  const workflowButtonLabel = (_candidateId: string) => "View in Pipeline";
 
   return (
     <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">

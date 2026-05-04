@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Loader2, Eye, EyeOff, Sparkles, ShieldCheck, Zap } from "lucide-react";
+import { Loader2, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getApiErrorMessage } from "../utils/apiError";
 
 const FEATURES = [
-  { icon: Zap,          text: "AI resume scoring in seconds"         },
-  { icon: ShieldCheck,  text: "Bias-free, structured shortlisting"   },
-  { icon: Sparkles,     text: "Auto-generated offer letters & JDs"   },
+  { text: "AI resume scoring in seconds"        },
+  { text: "Bias-free, structured shortlisting"  },
+  { text: "Smart interview scheduling & scoring" },
 ];
 
 export default function Login() {
@@ -55,91 +55,76 @@ export default function Login() {
   return (
     <div className="min-h-screen flex">
       {/* Left panel — branding */}
-      <div className="hidden lg:flex lg:w-[45%] bg-gradient-to-br from-emerald-700 via-emerald-600 to-cyan-700 flex-col justify-between p-12 text-white">
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-between p-12" style={{ background: 'rgba(255,255,255,0.45)', backdropFilter: 'blur(24px)' }}>
         <div>
           <div className="flex items-center gap-3 mb-16">
-            <div className="bg-white/20 rounded-xl p-2">
-              <Sparkles className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold tracking-tight">FairHire AI</span>
+            <span className="text-2xl font-bold tracking-tight text-slate-800">QuantumLogic Labs</span>
           </div>
-          <h1 className="text-4xl font-bold leading-tight mb-4">
+          <h1 className="text-4xl font-bold leading-tight mb-4 text-slate-800">
             Hire smarter,<br />not harder.
           </h1>
-          <p className="text-blue-100 text-lg leading-relaxed max-w-sm">
-            Your AI-powered hiring co-pilot — from job posting to offer letter, all in one place.
+          <p className="text-slate-500 text-lg leading-relaxed">
+            From job posting to offer letter, all in one place.
           </p>
           <div className="mt-10 space-y-4">
-            {FEATURES.map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-3">
-                <div className="bg-white/15 rounded-lg p-1.5 flex-shrink-0">
-                  <Icon className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-blue-50 text-sm">{text}</span>
+            {FEATURES.map(({ text }) => (
+              <div key={text} className="flex items-center gap-2.5">
+                <CheckCircle2 className="h-4 w-4 text-slate-500 flex-shrink-0" />
+                <span className="text-slate-600 text-base">{text}</span>
               </div>
             ))}
           </div>
         </div>
-        <p className="text-blue-200 text-xs">© {new Date().getFullYear()} FairHire AI. Built for modern HR teams.</p>
+        <p className="text-slate-400 text-xs">© {new Date().getFullYear()} QuantumLogic Labs. Built for modern HR teams.</p>
       </div>
 
       {/* Right panel — form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12" style={{background:'rgba(15,23,42,0.92)'}}>
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <Sparkles className="h-7 w-7 text-emerald-400" />
-            <span className="text-xl font-bold text-white">FairHire AI</span>
+            <span className="text-xl font-bold text-slate-800">QuantumLogic Labs</span>
           </div>
 
-          {/* Mode tabs */}
-          <div className="w-full bg-white/10 border border-white/10 rounded-xl p-1 mb-8 flex">
-            {(["login", "register"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => switchMode(m)}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                  mode === m
-                    ? "bg-emerald-500/80 text-white shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                {m === "login" ? "Sign in" : "Create account"}
-              </button>
-            ))}
+          {/* Mode toggle */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-xl font-bold text-slate-800">
+                {mode === "login" ? "Welcome back" : "Create your account"}
+              </h2>
+              <p className="text-sm text-slate-400 mt-0.5">
+                {mode === "login" ? (
+                  <>No account?{" "}
+                    <button type="button" onClick={() => switchMode("register")} className="text-slate-700 font-semibold hover:underline">Sign up</button>
+                  </>
+                ) : (
+                  <>Already have one?{" "}
+                    <button type="button" onClick={() => switchMode("login")} className="text-slate-700 font-semibold hover:underline">Sign in</button>
+                  </>
+                )}
+              </p>
+            </div>
           </div>
 
           <div className="glass rounded-2xl shadow-card p-8">
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-white">
-                {mode === "login" ? "Welcome back" : "Get started free"}
-              </h2>
-              <p className="text-sm text-slate-400 mt-1">
-                {mode === "login"
-                  ? "Sign in to your HR workspace"
-                  : "Create your HR account in seconds"}
-              </p>
-            </div>
-
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "register" && (
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-1.5">Full name</label>
+                  <label className="block text-sm font-semibold text-slate-600 mb-1.5">Full name</label>
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Jane Smith"
                     autoComplete="name"
-                    className="w-full px-4 py-2.5 rounded-xl border border-white/10 text-sm text-white bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder:text-slate-500"
+                    className="w-full px-4 py-2.5 rounded-xl border border-black/[0.08] text-sm text-slate-800 bg-white/70 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent placeholder:text-slate-400"
                     disabled={loading}
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-1.5">Work email</label>
+                <label className="block text-sm font-semibold text-slate-600 mb-1.5">Work email</label>
                 <input
                   type="email"
                   value={email}
@@ -147,16 +132,16 @@ export default function Login() {
                   placeholder="you@company.com"
                   required
                   autoComplete="email"
-                  className="w-full px-4 py-2.5 rounded-xl border border-white/10 text-sm text-white bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder:text-slate-500"
+                  className="w-full px-4 py-2.5 rounded-xl border border-black/[0.08] text-sm text-slate-800 bg-white/70 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent placeholder:text-slate-400"
                   disabled={loading}
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-sm font-semibold text-slate-300">Password</label>
+                  <label className="block text-sm font-semibold text-slate-600">Password</label>
                   {mode === "register" && (
-                    <span className="text-xs text-slate-500">Min. 8 characters</span>
+                    <span className="text-xs text-slate-400">Min. 8 characters</span>
                   )}
                 </div>
                 <div className="relative">
@@ -167,13 +152,13 @@ export default function Login() {
                     placeholder="••••••••"
                     required
                     autoComplete={mode === "login" ? "current-password" : "new-password"}
-                    className="w-full px-4 py-2.5 pr-11 rounded-xl border border-white/10 text-sm text-white bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder:text-slate-500"
+                    className="w-full px-4 py-2.5 pr-11 rounded-xl border border-black/[0.08] text-sm text-slate-800 bg-white/70 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent placeholder:text-slate-400"
                     disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
                     tabIndex={-1}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
@@ -183,16 +168,16 @@ export default function Login() {
               </div>
 
               {error && (
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/20 border border-red-500/30">
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-50 border border-red-200">
                   <span className="text-red-400 mt-0.5 flex-shrink-0">⚠</span>
-                  <p className="text-sm text-red-300">{error}</p>
+                  <p className="text-sm text-red-600">{error}</p>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-glow transition-colors mt-2"
+                className="btn-glass-dark w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed mt-2"
               >
                 {loading ? (
                   <><Loader2 className="h-4 w-4 animate-spin" />{mode === "login" ? "Signing in…" : "Creating account…"}</>
@@ -203,8 +188,8 @@ export default function Login() {
             </form>
           </div>
 
-          <p className="text-center text-xs text-slate-500 mt-6">
-            By continuing, you agree to FairHire AI's terms of service.
+          <p className="text-center text-xs text-slate-400 mt-6">
+            By continuing, you agree to QuantumLogic Labs' terms of service.
           </p>
         </div>
       </div>
