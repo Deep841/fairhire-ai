@@ -460,18 +460,19 @@ def _current_year() -> int:
 # Contact extraction
 # ---------------------------------------------------------------------------
 
-# Strict email — must have valid TLD, no leading/trailing dots in local part
+# Email regex — matches standard emails, tolerates being preceded by
+# spaces/separators that remain after symbol stripping
 _EMAIL_RE = re.compile(
-    r"(?<![\w.])"           # not preceded by word char or dot
-    r"([a-zA-Z0-9][a-zA-Z0-9._%+\-]{0,63}"  # local part starts with alnum
+    r"(?<![a-zA-Z0-9])"     # not preceded by alphanumeric (prevents partial matches)
+    r"([a-zA-Z0-9][a-zA-Z0-9._%+\-]{0,63}"  # local part
     r"@"
     r"[a-zA-Z0-9][a-zA-Z0-9.\-]{0,253}"     # domain
     r"\.[a-zA-Z]{2,})"      # TLD
-    r"(?![\w.@])"           # not followed by word char, dot, or another @
+    r"(?![a-zA-Z0-9@])"     # not followed by alphanumeric or another @
 )
 
 # Known fake/placeholder domains to reject
-_FAKE_DOMAINS = {"example.com", "test.com", "email.com", "domain.com", "fairhire.local", "mail.com"}
+_FAKE_DOMAINS = {"example.com", "test.com", "email.com", "domain.com", "fairhire.local", "quantumlogic.local", "mail.com"}
 
 # Phone — requires 10+ digits, anchored to avoid matching inside longer numbers
 _PHONE_RE = re.compile(
@@ -580,9 +581,10 @@ def _extract_email(text: str) -> str | None:
     def _prefer(candidates: list[str]) -> str | None:
         if not candidates:
             return None
-        # Prefer personal domains
+        # Prefer personal domains over edu/college domains
+        # but ALWAYS return something — never discard a valid edu email
         personal = [e for e in candidates if not any(
-            e.split("@")[1].endswith(s) for s in (".edu", ".ac.in", ".edu.in", ".ac.uk")
+            e.split("@")[1].endswith(s) for s in (".edu", ".ac.in", ".edu.in", ".ac.uk", ".edu.au")
         )]
         return (personal or candidates)[0]
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import select, cast, String
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
@@ -49,21 +49,16 @@ def validate_stage_transition(current: str, target: str) -> None:
         )
 
 
-def _hex(u: uuid.UUID) -> str:
-    """32-char hex — how SQLite stores UUID(as_uuid=True)."""
-    return u.hex
-
-
 async def _find_existing(
     db: AsyncSession,
     job_id: uuid.UUID,
     candidate_id: uuid.UUID,
 ) -> Application | None:
-    """Works on both SQLite (hex) and PostgreSQL (hyphenated) UUID storage."""
+    """Find existing application for (candidate, job) pair."""
     result = await db.execute(
         select(Application).where(
-            cast(Application.job_id, String).in_([str(job_id), _hex(job_id)]),
-            cast(Application.candidate_id, String).in_([str(candidate_id), _hex(candidate_id)]),
+            Application.job_id == job_id,
+            Application.candidate_id == candidate_id,
         ).limit(1)
     )
     return result.scalars().first()
