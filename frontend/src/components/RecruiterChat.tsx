@@ -45,6 +45,16 @@ export default function RecruiterChat() {
   const [activeGroup, setActiveGroup] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+
+  // Stop Lenis from hijacking wheel events inside the messages area
+  useEffect(() => {
+    const el = messagesRef.current;
+    if (!el) return;
+    const stop = (e: WheelEvent) => e.stopPropagation();
+    el.addEventListener("wheel", stop, { passive: true });
+    return () => el.removeEventListener("wheel", stop);
+  }, []);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, open, loading]);
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 100); }, [open]);
@@ -121,6 +131,8 @@ export default function RecruiterChat() {
 
           {/* Messages */}
           <div
+            ref={messagesRef}
+            data-lenis-prevent
             className="flex-1 overflow-y-auto p-4 space-y-3"
             style={{ minHeight: 0, overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
           >
