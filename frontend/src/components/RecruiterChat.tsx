@@ -85,7 +85,7 @@ export default function RecruiterChat() {
       {/* Chat window */}
       {open && (
         <div
-          className="fixed right-6 z-50 flex flex-col overflow-hidden"
+          className="fixed right-6 z-50 flex flex-col"
           style={{
             width: "min(400px, calc(100vw - 24px))",
             bottom: "80px",
@@ -96,6 +96,7 @@ export default function RecruiterChat() {
             border: "1px solid rgba(0,0,0,0.08)",
             borderRadius: "24px",
             boxShadow: "0px 0px 1px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.12)",
+            overflow: "hidden",
           }}
         >
           {/* Header */}
@@ -119,7 +120,10 @@ export default function RecruiterChat() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ minHeight: 0 }}>
+          <div
+            className="flex-1 overflow-y-auto p-4 space-y-3"
+            style={{ minHeight: 0, overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
+          >
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                 <div
