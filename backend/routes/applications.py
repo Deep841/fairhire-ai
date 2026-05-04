@@ -345,7 +345,7 @@ async def reject_application(
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
     already_rejected = app.stage == "rejected"
-    app = await application_service.update_stage(db, app, "rejected", status="rejected")
+    app = await application_service.update_stage(db, app, "rejected", status="rejected", validate=False)
     candidate: Candidate | None = await db.get(Candidate, app.candidate_id)
     job: Job | None = await db.get(Job, app.job_id)
     email_sent = False
@@ -366,7 +366,7 @@ async def make_offer(
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
     already_offered = app.stage == "offered"
-    app = await application_service.update_stage(db, app, "offered", status="offered")
+    app = await application_service.update_stage(db, app, "offered", status="offered", validate=False)
     candidate: Candidate | None = await db.get(Candidate, app.candidate_id)
     job: Job | None = await db.get(Job, app.job_id)
     email_sent = False
@@ -398,7 +398,7 @@ async def send_test_link_route(
             test_link=body.test_link,
             deadline=body.deadline,
         )
-    app = await application_service.update_stage(db, app, "testing")
+    app = await application_service.update_stage(db, app, "testing", validate=False)
     email_label = "sent" if email_sent else ("disabled" if not settings.SMTP_ENABLED else "already_sent" if already_sent else "failed")
     return await _enrich(db, app, email_sent=email_sent, email_status=email_label)
 
