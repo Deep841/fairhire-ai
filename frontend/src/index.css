@@ -7,245 +7,163 @@
 @layer base {
   * { box-sizing: border-box; }
 
-  html, body, #root {
-    font-family: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  }
-
   body {
     margin: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #0a1628;
-    background-image:
-      radial-gradient(ellipse 70% 55% at 15% 5%,  rgba(16, 185, 129, 0.22) 0%, transparent 60%),
-      radial-gradient(ellipse 55% 45% at 85% 85%,  rgba(6,  182, 212, 0.18) 0%, transparent 55%),
-      radial-gradient(ellipse 45% 40% at 55% 40%,  rgba(52, 211, 153, 0.10) 0%, transparent 50%);
-    background-attachment: fixed;
-    color: #e2e8f0;
+    background-color: #F4F7FF;
+    color: #0f172a;
     min-height: 100vh;
   }
 
-  /* ── DM Sans on every element ─────────────────────────────────────────── */
-  *, *::before, *::after {
-    font-family: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  #root {
+    position: relative;
+    z-index: 1;
   }
 
-  /* ── Dark-theme text remapping ────────────────────────────────────────── */
-  /* Components were built for a light bg. Remap slate classes so every      */
-  /* text level is clearly visible on #0a1628.                               */
+  /* ── No rainbow — neutralise all color classes ── */
+  .text-white        { color: #0f172a !important; }
 
-  /* Primary text — headings, labels */
-  .text-slate-900 { color: #f1f5f9 !important; }
-  .text-slate-800 { color: #e2e8f0 !important; }
-
-  /* Secondary text — descriptions, sub-labels */
-  .text-slate-700 { color: #cbd5e1 !important; }
-  .text-slate-600 { color: #94a3b8 !important; }
-
-  /* Muted text — placeholders, hints */
-  .text-slate-500 { color: #64748b !important; }
-
-  /* Very muted — timestamps, meta */
-  .text-slate-400 { color: #475569 !important; }
-  .text-slate-300 { color: #94a3b8 !important; }
-
-  /* Always white */
-  .text-white { color: #ffffff !important; }
-
-  /* Gray text */
-  .text-gray-900 { color: #f1f5f9 !important; }
-  .text-gray-800 { color: #e2e8f0 !important; }
-  .text-gray-700 { color: #cbd5e1 !important; }
-  .text-gray-600 { color: #94a3b8 !important; }
-  .text-gray-500 { color: #64748b !important; }
-  .text-gray-400 { color: #475569 !important; }
-
-  /* ── Button text always white ─────────────────────────────────────────── */
+  /* preserve white text inside dark buttons */
   .btn-glass-dark,
   .btn-glass-dark * { color: #ffffff !important; }
+  .text-slate-100    { color: #1e293b !important; }
+  .text-slate-200    { color: #334155 !important; }
+  .text-slate-300    { color: #475569 !important; }
+  .text-slate-400    { color: #64748b !important; }
+  .text-slate-500    { color: #94a3b8 !important; }
+  .text-slate-600    { color: #94a3b8 !important; }
 
-  /* ── Inputs ───────────────────────────────────────────────────────────── */
-  input, textarea, select {
-    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
-    color: #f1f5f9;
-    background-color: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
-  }
-  input::placeholder, textarea::placeholder { color: #475569; }
+  /* score/stage badge text — keep readable but neutral */
+  .text-green-700, .text-blue-700, .text-amber-700,
+  .text-red-700, .text-cyan-800, .text-sky-800,
+  .text-purple-800, .text-indigo-400, .text-blue-400,
+  .text-amber-400, .text-amber-800, .text-purple-400 { color: #334155 !important; }
 
-  /* ── Background remaps ────────────────────────────────────────────────── */
-  .bg-white              { background-color: rgba(255,255,255,0.06) !important; }
-  .bg-white\/70          { background-color: rgba(255,255,255,0.08) !important; }
-  .bg-white\/5           { background-color: rgba(255,255,255,0.05) !important; }
-  .bg-white\/10          { background-color: rgba(255,255,255,0.08) !important; }
-  .bg-slate-50           { background-color: rgba(255,255,255,0.04) !important; }
-  .bg-slate-100          { background-color: rgba(255,255,255,0.07) !important; }
-  .bg-slate-200          { background-color: rgba(255,255,255,0.10) !important; }
-  .bg-slate-900          { background-color: #0f172a !important; }
-  .bg-gray-100           { background-color: rgba(255,255,255,0.07) !important; }
-  .bg-black\/3           { background-color: rgba(0,0,0,0.20) !important; }
-  .bg-black\/\[0\.02\]   { background-color: rgba(0,0,0,0.15) !important; }
-  .bg-black\/\[0\.03\]   { background-color: rgba(0,0,0,0.20) !important; }
+  /* score/stage badge backgrounds — all neutral */
+  .bg-green-50, .bg-blue-50, .bg-amber-50,
+  .bg-red-50, .bg-cyan-50, .bg-sky-50,
+  .bg-purple-50, .bg-indigo-50 { background-color: #f8fafc !important; }
 
-  /* hover bg remaps */
-  .hover\:bg-slate-50:hover   { background-color: rgba(255,255,255,0.07) !important; }
-  .hover\:bg-slate-100:hover  { background-color: rgba(255,255,255,0.10) !important; }
-  .hover\:bg-black\/3:hover   { background-color: rgba(255,255,255,0.06) !important; }
-  .hover\:bg-white\/10:hover  { background-color: rgba(255,255,255,0.10) !important; }
+  /* score/stage badge borders — all neutral */
+  .border-green-200, .border-blue-200, .border-amber-200,
+  .border-red-200, .border-cyan-200, .border-sky-200,
+  .border-purple-200, .border-indigo-200 { border-color: #e2e8f0 !important; }
 
-  /* ── Border remaps ────────────────────────────────────────────────────── */
-  .border-slate-100          { border-color: rgba(255,255,255,0.08) !important; }
-  .border-slate-200          { border-color: rgba(255,255,255,0.12) !important; }
-  .border-gray-100           { border-color: rgba(255,255,255,0.08) !important; }
-  .border-gray-200           { border-color: rgba(255,255,255,0.12) !important; }
-  .border-black\/8           { border-color: rgba(255,255,255,0.08) !important; }
-  .border-black\/\[0\.08\]   { border-color: rgba(255,255,255,0.08) !important; }
-  .border-white\/10          { border-color: rgba(255,255,255,0.10) !important; }
-  .border-white\/12          { border-color: rgba(255,255,255,0.12) !important; }
+  /* single accent — slate only, no green */
+  .text-emerald-300, .text-emerald-400,
+  .text-emerald-600, .text-emerald-700  { color: #475569 !important; }
+  .bg-emerald-50                        { background-color: #f8fafc !important; }
+  .bg-emerald-500\/15,
+  .bg-emerald-500\/20                   { background-color: rgba(0,0,0,0.04) !important; }
+  .border-emerald-200                   { border-color: #e2e8f0 !important; }
+  .bg-emerald-600, .bg-emerald-700      { background-color: #0f172a !important; }
+  .hover\:bg-emerald-700:hover          { background-color: #1e293b !important; }
+  .focus\:ring-emerald-500              { --tw-ring-color: #94a3b8 !important; }
 
-  /* ── Divide remaps ────────────────────────────────────────────────────── */
-  .divide-slate-100 > * + * { border-color: rgba(255,255,255,0.06) !important; }
-  .divide-black\/5  > * + * { border-color: rgba(255,255,255,0.06) !important; }
-  .divide-black\/8  > * + * { border-color: rgba(255,255,255,0.08) !important; }
-  .divide-white\/5  > * + * { border-color: rgba(255,255,255,0.05) !important; }
+  /* borders */
+  .border-white\/10  { border-color: rgba(0,0,0,0.07) !important; }
+  .border-white\/15  { border-color: rgba(0,0,0,0.09) !important; }
+  .border-white\/20  { border-color: rgba(0,0,0,0.10) !important; }
 
-  /* ── Accent colour remaps (badges, tags, links) ───────────────────────── */
-
-  /* Emerald / green — primary brand */
-  .text-emerald-700, .text-emerald-600 { color: #34d399 !important; }
-  .text-emerald-400, .text-emerald-300 { color: #6ee7b7 !important; }
-  .bg-emerald-50  { background-color: rgba(16,185,129,0.12) !important; }
-  .bg-emerald-100 { background-color: rgba(16,185,129,0.18) !important; }
-  .border-emerald-200 { border-color: rgba(16,185,129,0.30) !important; }
-  .hover\:bg-emerald-100:hover { background-color: rgba(16,185,129,0.22) !important; }
-
-  /* Red — reject / error */
-  .text-red-700, .text-red-600 { color: #f87171 !important; }
-  .bg-red-50  { background-color: rgba(239,68,68,0.12) !important; }
-  .bg-red-100 { background-color: rgba(239,68,68,0.18) !important; }
-  .border-red-200 { border-color: rgba(239,68,68,0.30) !important; }
-  .hover\:bg-red-100:hover { background-color: rgba(239,68,68,0.22) !important; }
-
-  /* Amber — warning / test */
-  .text-amber-800, .text-amber-700 { color: #fbbf24 !important; }
-  .bg-amber-50  { background-color: rgba(245,158,11,0.12) !important; }
-  .bg-amber-100 { background-color: rgba(245,158,11,0.18) !important; }
-  .border-amber-200 { border-color: rgba(245,158,11,0.30) !important; }
-
-  /* Blue */
-  .text-blue-700, .text-blue-800, .text-blue-600 { color: #60a5fa !important; }
-  .bg-blue-50  { background-color: rgba(59,130,246,0.12) !important; }
-  .bg-blue-100 { background-color: rgba(59,130,246,0.18) !important; }
-  .border-blue-200 { border-color: rgba(59,130,246,0.30) !important; }
-  .hover\:bg-blue-100:hover { background-color: rgba(59,130,246,0.22) !important; }
-
-  /* Cyan */
-  .text-cyan-800, .text-cyan-700 { color: #22d3ee !important; }
-  .bg-cyan-50  { background-color: rgba(6,182,212,0.10) !important; }
-  .bg-cyan-100 { background-color: rgba(6,182,212,0.15) !important; }
-  .border-cyan-200 { border-color: rgba(6,182,212,0.30) !important; }
-
-  /* Purple */
-  .text-purple-800, .text-purple-700 { color: #c084fc !important; }
-  .bg-purple-50  { background-color: rgba(168,85,247,0.10) !important; }
-  .bg-purple-100 { background-color: rgba(168,85,247,0.15) !important; }
-  .border-purple-200 { border-color: rgba(168,85,247,0.30) !important; }
-
-  /* Sky */
-  .text-sky-800, .text-sky-700 { color: #38bdf8 !important; }
-  .bg-sky-50  { background-color: rgba(14,165,233,0.10) !important; }
-  .bg-sky-100 { background-color: rgba(14,165,233,0.15) !important; }
-  .border-sky-200 { border-color: rgba(14,165,233,0.30) !important; }
-
-  /* Green */
-  .text-green-800, .text-green-700 { color: #4ade80 !important; }
-  .bg-green-50  { background-color: rgba(34,197,94,0.10) !important; }
-  .bg-green-100 { background-color: rgba(34,197,94,0.15) !important; }
-  .border-green-200 { border-color: rgba(34,197,94,0.30) !important; }
-  .hover\:bg-green-700:hover { background-color: #047857 !important; }
+  /* bg overlays */
+  .bg-white\/5       { background-color: rgba(0,0,0,0.03) !important; }
+  .bg-white\/10      { background-color: rgba(0,0,0,0.05) !important; }
+  .bg-white\/15      { background-color: rgba(0,0,0,0.07) !important; }
+  .hover\:bg-white\/10:hover  { background-color: rgba(0,0,0,0.05) !important; }
+  .hover\:bg-white\/15:hover  { background-color: rgba(0,0,0,0.07) !important; }
+  .divide-white\/5   > * + * { border-color: rgba(0,0,0,0.05) !important; }
+  .divide-white\/10  > * + * { border-color: rgba(0,0,0,0.07) !important; }
 }
 
 @layer utilities {
   .glass {
-    background: rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    border-radius: 24px;
+  }
+
+  @media (min-width: 768px) {
+    .glass {
+      border-radius: 32px;
+    }
   }
 
   .glass-panel {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.55);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border-right: 1px solid rgba(255, 255, 255, 0.09);
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
   }
 
   .glass-navbar {
-    background: rgba(10, 22, 40, 0.80);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(0, 0, 0, 0.07);
   }
 
   .glass-hover:hover {
-    background: rgba(255, 255, 255, 0.11);
-    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.80);
+    border-color: rgba(0, 0, 0, 0.10);
     transition: all 0.2s ease;
   }
 
   .shadow-card {
-    box-shadow:
-      0 1px 2px  rgba(0, 0, 0, 0.35),
-      0 6px 20px rgba(0, 0, 0, 0.28),
-      0 0 0 1px rgba(255, 255, 255, 0.07);
+    box-shadow: 0px 0px 1px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
   }
 
-  .shadow-glow    { box-shadow: 0 0 28px rgba(16, 185, 129, 0.35); }
-  .shadow-glow-sm { box-shadow: 0 0 14px rgba(16, 185, 129, 0.25); }
+  .shadow-glow {
+    box-shadow: 0 0 28px rgba(100, 116, 139, 0.2);
+  }
 
-  /* Uniform page content width */
+  .shadow-glow-sm {
+    box-shadow: 0 0 14px rgba(100, 116, 139, 0.15);
+  }
+
   .page-content {
     width: 100%;
     max-width: 1280px;
   }
 
-  /* ── Buttons ──────────────────────────────────────────────────────────── */
   .btn-glass {
     position: relative;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    color: #e2e8f0 !important;
-    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    background: #f1f5f9;
+    border: none;
+    color: #0f172a;
     font-weight: 500;
     letter-spacing: -0.01em;
-    transition: all 0.2s ease;
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.09), 0px 0px 1px rgba(0,0,0,0.2);
+    transition: all 0.5s ease;
     cursor: pointer;
   }
   .btn-glass:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.22);
+    transition-duration: 0.7s;
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.09), 0px 0px 1px rgba(0,0,0,0.2);
   }
-  .btn-glass:active:not(:disabled) { transform: scale(0.97); }
+  .btn-glass:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.2s; }
   .btn-glass:disabled { opacity: 0.40; pointer-events: none; }
+  .btn-glass > * { position: relative; z-index: 10; }
 
   .btn-glass-dark {
     position: relative;
     overflow: hidden;
-    background: #10b981;
+    background: #131313;
     border: none;
     color: #ffffff !important;
-    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: -0.01em;
-    transition: all 0.2s ease;
+    box-shadow: inset 0 0 12px rgba(255,255,255,1), 0px 0px 2px 0 rgba(0,0,0,0.1);
+    transition: all 0.5s ease;
     cursor: pointer;
   }
-  .btn-glass-dark:hover:not(:disabled) { background: #059669; }
-  .btn-glass-dark:active:not(:disabled) { transform: scale(0.97); }
+  .btn-glass-dark:hover:not(:disabled) { transition-duration: 0.7s; opacity: 0.88; }
+  .btn-glass-dark:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.2s; }
   .btn-glass-dark:disabled { opacity: 0.40; pointer-events: none; }
-  .btn-glass-dark * { color: #ffffff !important; }
+  .btn-glass-dark > * { position: relative; z-index: 10; }
 
   /* hide scrollbar but keep scroll */
   .chat-messages::-webkit-scrollbar { display: none; }

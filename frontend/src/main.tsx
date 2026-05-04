@@ -4,6 +4,7 @@ import Lenis from "lenis";
 import App from "./App";
 import "./index.css";
 
+// Bootstrap Lenis smooth scroll
 const lenis = new Lenis({ autoRaf: true });
 (window as any).__lenis = lenis;
 

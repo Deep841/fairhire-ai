@@ -65,9 +65,14 @@ export default function App() {
       <AuthProvider>
         <JobProvider>
           <PipelineProvider>
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" style={{ backgroundColor: '#0a1628' }}>
-              <div aria-hidden="true" style={{ position: 'absolute', top: '15%', left: '15%', width: '70%', height: '55%', opacity: 0.22, filter: 'blur(80px)', background: 'radial-gradient(ellipse, #10b981 0%, transparent 60%)' }} />
-              <div aria-hidden="true" style={{ position: 'absolute', top: '85%', left: '85%', width: '55%', height: '45%', opacity: 0.18, filter: 'blur(80px)', background: 'radial-gradient(ellipse, #06b6d4 0%, transparent 55%)' }} />
+            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" style={{ backgroundColor: '#F4F7FF' }}>
+              <img
+                src="/hero-gradient.svg"
+                alt=""
+                aria-hidden="true"
+                style={{ position: 'absolute', top: '-120%', left: '50%', width: '160%', maxWidth: 'none', height: 'auto', transform: 'translateX(-50%)', transformOrigin: 'top center' }}
+              />
+              <div aria-hidden="true" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '400px', opacity: 0.4, filter: 'blur(100px)', background: 'radial-gradient(ellipse, #A5BBFC 0%, #D5E2FF 40%, transparent 70%)' }} />
             </div>
             <div className="relative z-10">
               <AppRoutes />
