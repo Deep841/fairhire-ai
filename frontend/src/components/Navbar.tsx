@@ -112,8 +112,10 @@ export default function Navbar() {
                 <Link
                   key={path}
                   to={path}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-widest transition-colors ${
-                    active ? "text-slate-900 bg-black/6" : "text-slate-400 hover:text-slate-700 hover:bg-black/5"
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-widest transition-all duration-200 ${
+                    active
+                      ? "text-slate-900 bg-slate-900/8 shadow-sm"
+                      : "text-slate-400 hover:text-slate-700 hover:bg-slate-900/5"
                   }`}
                 >
                   {label}
@@ -128,8 +130,8 @@ export default function Navbar() {
               <JobSwitcher />
             </div>
             <div className="hidden sm:flex items-center gap-2">
-              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-white" style={{color:'white'}}>{initials}</span>
+              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center ring-2 ring-slate-200">
+                <span className="text-[10px] font-bold text-white">{initials}</span>
               </div>
               <span className="text-xs font-semibold text-slate-600">{user?.full_name ?? "HR User"}</span>
             </div>
