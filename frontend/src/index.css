@@ -12,13 +12,13 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-color: #F4F7FF;
+    background-image:
+      radial-gradient(ellipse 80vw 60vh at 50% -10%, rgba(165, 187, 252, 0.45) 0%, transparent 65%),
+      radial-gradient(ellipse 60vw 50vh at 80% 80%, rgba(213, 226, 255, 0.35) 0%, transparent 60%),
+      radial-gradient(ellipse 50vw 40vh at 20% 60%, rgba(196, 213, 255, 0.25) 0%, transparent 55%);
+    background-attachment: fixed;
     color: #0f172a;
     min-height: 100vh;
-  }
-
-  #root {
-    position: relative;
-    z-index: 1;
   }
 
   /* ── No rainbow — neutralise all color classes ── */
