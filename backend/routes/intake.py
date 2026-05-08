@@ -19,7 +19,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.session import get_db
-from db.models import Job, Candidate, Application
+from db.models import Job, Candidate, Application, FormSubmission
 from services import candidate_service, application_service
 from services.notification_service import send_application_acknowledgement
 from services.profile_extractor import extract_profile
@@ -67,6 +67,7 @@ async def intake_submit(
         candidate = await candidate_service.create(
             db, full_name=body.full_name, email=body.email,
             resume_text=full_resume or None, phone=body.phone,
+            linkedin_url=body.linkedin_url,
         )
     except Exception:
         result = await db.execute(select(Candidate).where(Candidate.email == body.email))
@@ -115,6 +116,23 @@ async def intake_submit(
         matched_skills=matched_skills,
         missing_skills=missing_skills,
     )
+
+    # Persist raw form submission — immutable audit record
+    submission = FormSubmission(
+        job_id=body.job_id,
+        candidate_id=candidate.id,
+        application_id=app.id,
+        full_name=body.full_name,
+        email=body.email,
+        phone=body.phone,
+        linkedin_url=body.linkedin_url,
+        resume_text=body.resume_text,
+        cover_note=body.cover_note,
+        resume_score=resume_score,
+        source="web_form",
+    )
+    db.add(submission)
+    await db.commit()
 
     email_sent = await send_application_acknowledgement(
         candidate_email=candidate.email,

@@ -44,6 +44,7 @@ class Candidate(Base):
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     phone: Mapped[str | None] = mapped_column(String(50))
+    linkedin_url: Mapped[str | None] = mapped_column(String(1000))
     resume_text: Mapped[str | None] = mapped_column(Text)
 
 
@@ -115,3 +116,30 @@ class Interview(Base):
     notes: Mapped[str | None] = mapped_column(Text)
     score: Mapped[float | None] = mapped_column(Float)
     feedback: Mapped[str | None] = mapped_column(Text)
+
+
+class FormSubmission(Base):
+    """
+    Raw record of every public form / intake submission.
+    Stored independently so the original applicant data is never lost
+    even if candidate deduplication merges or updates the Candidate row.
+    """
+    __tablename__ = "form_submissions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("jobs.id"), nullable=False, index=True)
+    candidate_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("candidates.id"), nullable=True)
+    application_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("applications.id"), nullable=True)
+
+    # Raw fields exactly as submitted
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    phone: Mapped[str | None] = mapped_column(String(50))
+    linkedin_url: Mapped[str | None] = mapped_column(String(1000))
+    resume_text: Mapped[str | None] = mapped_column(Text)
+    cover_note: Mapped[str | None] = mapped_column(Text)
+
+    # Processing outcome
+    resume_score: Mapped[float | None] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(50), default="web_form")  # web_form | api | google_form
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)

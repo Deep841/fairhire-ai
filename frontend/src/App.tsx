@@ -9,6 +9,7 @@ import Pipeline from "./pages/Pipeline";
 import CandidateProfile from "./pages/CandidateProfile";
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
+import GoogleCallback from "./pages/GoogleCallback";
 import { PipelineProvider } from "./context/PipelineContext";
 import { JobProvider } from "./context/JobContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -40,6 +41,7 @@ function AppRoutes() {
           {/* Public */}
           <Route path="/" element={<RedirectIfAuth><FadeIn><Landing /></FadeIn></RedirectIfAuth>} />
           <Route path="/login" element={<RedirectIfAuth><FadeIn><Login /></FadeIn></RedirectIfAuth>} />
+          <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
           {/* Protected */}
           <Route path="/dashboard" element={<RequireAuth><FadeIn><Dashboard /></FadeIn></RequireAuth>} />
@@ -65,6 +67,15 @@ export default function App() {
       <AuthProvider>
         <JobProvider>
           <PipelineProvider>
+            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" style={{ backgroundColor: '#F4F7FF' }}>
+              <img
+                src="/hero-gradient.svg"
+                alt=""
+                aria-hidden="true"
+                style={{ position: 'absolute', top: '-120%', left: '50%', width: '160%', maxWidth: 'none', height: 'auto', transform: 'translateX(-50%)', transformOrigin: 'top center' }}
+              />
+              <div aria-hidden="true" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '400px', opacity: 0.4, filter: 'blur(100px)', background: 'radial-gradient(ellipse, #A5BBFC 0%, #D5E2FF 40%, transparent 70%)' }} />
+            </div>
             <div className="relative z-10">
               <AppRoutes />
             </div>

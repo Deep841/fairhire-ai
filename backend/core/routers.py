@@ -12,6 +12,7 @@ from routes.intake import router as intake_router
 from routes.auth import router as auth_router
 from routes.applications import router as applications_router
 from routes.chat import router as chat_router
+from routes.apply import router as apply_router
 
 _V1 = "/api/v1"
 
@@ -28,6 +29,7 @@ _ROUTERS = [
     (analytics_router,    f"{_V1}/analytics",     ["Analytics"]),
     (publish_router,      f"{_V1}/jobs",          ["Publish"]),
     (intake_router,       f"{_V1}/intake",        ["Intake"]),
+    (apply_router,        "",                     ["Apply"]),
 ]
 
 

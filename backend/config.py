@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     # Google Forms
     GOOGLE_FORMS_ENABLED: bool = False
     GOOGLE_CREDENTIALS_PATH: str = "credentials.json"
+    PUBLIC_BASE_URL: str = "http://localhost:8000"
+
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
 
     # JWT
     JWT_SECRET: str = "CHANGE_ME_SET_JWT_SECRET_IN_DOT_ENV"
