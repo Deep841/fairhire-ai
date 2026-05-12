@@ -115,13 +115,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, [persist]);
 
-  const clearAuth = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setToken(null);
-    setUser(null);
-  }, []);
-
   const logout = clearAuth;
 
   // Global 401 interceptor — auto-logout on expired / invalid token
